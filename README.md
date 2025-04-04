@@ -24,6 +24,33 @@ The code should support the following features as api endpoints:
 
 Any calculation which for example depends on the wheel size or other parameters should be done in the code internally, the caller should not have to worry about it.
 
+### Code Structure
+
+The code is organized into several modules to improve maintainability and separation of concerns:
+
+```
+src/
+├── main.ino          - Main Arduino sketch file with setup() and loop()
+├── include/          - Header files directory
+│   ├── globals.h     - Global constants, variables, and structures
+│   ├── movement.h    - Movement-related function declarations
+│   ├── pen.h         - Pen control function declarations
+│   ├── sensor.h      - Sensor function declarations
+│   └── api.h         - API endpoint declarations
+├── core/             - Core functionality
+│   └── globals.cpp   - Implementation of global variables
+├── movement/         - Movement control
+│   └── movement.cpp  - Implementation of movement functions
+├── pen/              - Pen control
+│   └── pen.cpp       - Implementation of pen functions
+├── sensor/           - Sensor functionality
+│   └── sensor.cpp    - Implementation of sensor functions
+└── api/              - API handling
+    └── api.cpp       - Implementation of API endpoints
+```
+
+### API Reference
+
 #### Return Values
 
 - Operations should return a Result object:
@@ -46,7 +73,7 @@ Any calculation which for example depends on the wheel size or other parameters 
   - Rotations completed
   - Pen state
 
-### Translation Movement
+#### Translation Movement
 
 - **Move forward**
   - Parameters:
@@ -64,7 +91,7 @@ Any calculation which for example depends on the wheel size or other parameters 
 - **Move backward**
   - Currently not supported due to lack of backward ultrasonic sensor
 
-### Rotation Movement
+#### Rotation Movement
 
 - **Turn left or right**
   - Parameters:
@@ -83,7 +110,7 @@ Any calculation which for example depends on the wheel size or other parameters 
     - Time taken
     - Rotations completed
 
-### Pen Operations
+#### Pen Operations
 
 - **Lift the pen up**
   - No parameters
@@ -106,7 +133,7 @@ Any calculation which for example depends on the wheel size or other parameters 
   - No parameters
   - Success: (up or down)
 
-### Ultrasonic Sensor
+#### Ultrasonic Sensor
 
 - **Get the distance to the nearest object in front of the car**
   - No parameters
