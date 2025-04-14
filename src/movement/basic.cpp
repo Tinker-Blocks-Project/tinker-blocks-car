@@ -1,5 +1,39 @@
 #include "../include/movement.h"
 
+const int MOTOR_PINS[] = {22, 23, 24, 25, 30, 31, 32, 33};
+const int ENABLE_PINS[] = {4, 6, 3, 8};
+const int SERVO_PINS[] = {2, 11};
+
+const int FRONT_LEFT_REF_ANGLE = 105; // the angle for the left front wheel to be straight forward
+const int FRONT_RIGHT_REF_ANGLE = 90; // the angle for the right front wheel to be straight forward
+
+Servo frontLeftServo;
+Servo frontRightServo;
+
+void setupMovement()
+{
+    for (int i = 0; i < 8; i++)
+    {
+        pinMode(MOTOR_PINS[i], OUTPUT);
+    }
+
+    for (int i = 0; i < 4; i++)
+    {
+        pinMode(ENABLE_PINS[i], OUTPUT);
+    }
+
+    for (int i = 0; i < 2; i++)
+    {
+        pinMode(SERVO_PINS[i], OUTPUT);
+    }
+
+    frontLeftServo.attach(SERVO_PINS[FRONT_LEFT_SERVO_INDEX]);
+    frontRightServo.attach(SERVO_PINS[FRONT_RIGHT_SERVO_INDEX]);
+
+    steeringServo(FRONT_LEFT_SERVO_INDEX, FRONT_LEFT_REF_ANGLE);
+    steeringServo(FRONT_RIGHT_SERVO_INDEX, FRONT_RIGHT_REF_ANGLE);
+}
+
 void moveMotor(int motorIndex, int speed)
 {
     if (motorIndex == 3)
@@ -9,9 +43,9 @@ void moveMotor(int motorIndex, int speed)
 
     bool reverse = speed < 0;
 
-    int pin1 = motorPins[motorIndex * 2];
-    int pin2 = motorPins[motorIndex * 2 + 1];
-    int enPin = enablePins[motorIndex];
+    int pin1 = MOTOR_PINS[motorIndex * 2];
+    int pin2 = MOTOR_PINS[motorIndex * 2 + 1];
+    int enPin = ENABLE_PINS[motorIndex];
 
     analogWrite(enPin, abs(speed));
 
@@ -29,9 +63,9 @@ void moveAllMotors(int speed)
 
 void stopMotor(int motorIndex)
 {
-    int pin1 = motorPins[motorIndex * 2];
-    int pin2 = motorPins[motorIndex * 2 + 1];
-    int enPin = enablePins[motorIndex];
+    int pin1 = MOTOR_PINS[motorIndex * 2];
+    int pin2 = MOTOR_PINS[motorIndex * 2 + 1];
+    int enPin = ENABLE_PINS[motorIndex];
 
     digitalWrite(pin1, LOW);
     digitalWrite(pin2, LOW);
@@ -46,12 +80,24 @@ void stopAllMotors()
     stopMotor(REAR_RIGHT_MOTOR_INDEX);
 }
 
-void moveSteeringServo(int servoIndex, int angle)
+void steeringServo(int servoIndex, int angle)
 {
-    if (servoIndex != FRONT_LEFT_SERVO_INDEX && servoIndex != FRONT_RIGHT_SERVO_INDEX)
+    if (servoIndex == FRONT_LEFT_SERVO_INDEX)
+    {
+        frontLeftServo.write(angle);
+    }
+    else if (servoIndex == FRONT_RIGHT_SERVO_INDEX)
+    {
+        frontRightServo.write(angle);
+    }
+    else
     {
         throw std::invalid_argument("Invalid servo index");
     }
+}
 
-    servos[servoIndex].write(angle);
+void steeringAllServos(int angle)
+{
+    steeringServo(FRONT_LEFT_SERVO_INDEX, angle);
+    steeringServo(FRONT_RIGHT_SERVO_INDEX, angle);
 }

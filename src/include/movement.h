@@ -3,16 +3,14 @@
 
 #include "globals.h"
 
-// Physics and wheel constants
-const float WHEEL_DIAMETER_CM = 6.6;
-const float WHEEL_CIRCUMFERENCE_CM = WHEEL_DIAMETER_CM * PI;
-const float MAX_SPEED_CM_PER_MS = 0.01; // Calibrate this value with real measurements
-
 // TODO: fix these
 const int FRONT_LEFT_MOTOR_INDEX = 0;
 const int FRONT_RIGHT_MOTOR_INDEX = 1;
 const int REAR_LEFT_MOTOR_INDEX = 2;
 const int REAR_RIGHT_MOTOR_INDEX = 3;
+
+const int FRONT_LEFT_SERVO_INDEX = 0;
+const int FRONT_RIGHT_SERVO_INDEX = 1;
 
 // Movement Parameters Structure
 // This structure allows passing any combination of movement parameters
@@ -35,11 +33,13 @@ struct MovementParams
 };
 
 // Basic motor controls
+void setupMovement();
 void moveMotor(int motorIndex, int speed); // speed is a value between -255 and 255
 void moveAllMotors(int speed);
 void stopMotor(int motorIndex);
 void stopAllMotors();
-void moveSteeringServo(int servoIndex, int angle);
+void steeringServo(int servoIndex, int angle);
+void steeringAllServos(int angle);
 
 // Movement operations
 Result translate(const MovementParams &params);

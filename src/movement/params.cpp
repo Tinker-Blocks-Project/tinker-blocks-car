@@ -1,5 +1,10 @@
 #include "../include/movement.h"
 
+// Physics and wheel constants
+const float WHEEL_DIAMETER_CM = 6.6;
+const float WHEEL_CIRCUMFERENCE_CM = WHEEL_DIAMETER_CM * PI;
+const float MAX_SPEED_CM_PER_MS = 0.01; // Calibrate this value with real measurements
+
 // Create params from speed and distance, calculate time
 MovementParams MovementParams::fromSpeedAndDistance(int s, float d)
 {
