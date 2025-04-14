@@ -1,6 +1,9 @@
 #ifndef MOVEMENT_H
 #define MOVEMENT_H
 
+#define WHEEL_DIAMETER_CM 6.6
+#define CM_PER_MS 0.01 // adjust after calibration
+
 #include "globals.h"
 
 // Basic motor controls
