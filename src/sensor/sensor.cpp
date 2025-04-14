@@ -1,5 +1,7 @@
+#include "../include/sensor.h"
 
-void setupUltrasonic() {
+void setupUltrasonic()
+{
     pinMode(TRIG_PIN, OUTPUT);
     pinMode(ECHO_PIN, INPUT);
 }
@@ -20,7 +22,8 @@ float getDistance()
     float distanceCm = duration * 0.0343 / 2.0;
 
     // If no valid reading, return a high value
-    if (duration == 0) {
+    if (duration == 0)
+    {
         return 500.0;
     }
 

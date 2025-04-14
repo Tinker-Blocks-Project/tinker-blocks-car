@@ -51,6 +51,27 @@ src/
 
 ### API Reference
 
+#### Movement Parameters
+
+Movement operations use a unified `MovementParams` structure that allows for flexible parameter combinations. You need to specify only two parameters, and the third will be automatically calculated:
+
+```json
+{
+  "speed": int,         // -255 to 255, negative for backward movement
+  "time_ms": int,       // Time in milliseconds
+  "distance_cm": float  // Distance in centimeters
+}
+```
+
+Valid parameter combinations:
+- speed & distance
+- speed & time
+- distance & time
+
+Rules for using movement parameters:
+- For backward movement, use negative speed values
+- Internal calculations use physics constants that can be calibrated for your specific hardware
+
 #### Return Values
 
 - Operations should return a Result object:
@@ -70,37 +91,28 @@ src/
 - `success_result` is the result of the operation if it was successful, defined by the operation. For example:
   - Distance traveled
   - Time taken
-  - Rotations completed
   - Pen state
 
 #### Translation Movement
 
 - **Move forward**
-  - Parameters:
-    - Oneof:
-      - speed (0-255) & distance (cm)
-      - time (ms)
-      - speed (0-255) & rotations (float)
+  - Parameters: MovementParams with any valid combination of speed, time, and distance
   - Failure:
     - Ultrasonic sensor indicates an obstacle in front of the car
   - Success:
     - Distance traveled
     - Time taken
-    - Rotations completed
 
 - **Move backward**
-  - Currently not supported due to lack of backward ultrasonic sensor
+  - Same as move forward, but with negative speed
 
 #### Rotation Movement
 
 - **Turn left or right**
-  - Parameters:
-    - direction (left or right)
-    - radius of rotation (cm)
-    - Oneof:
-      - speed (0-255) & distance (cm)
-      - time (ms)
-      - speed (0-255) & rotations (float)
+  - Required parameters:
+    - direction: "left" or "right"
+    - radius: turning radius in centimeters
+  - Movement parameters: Any valid MovementParams combination
   - Failure:
     - Ultrasonic sensor indicates an obstacle in front of the car
     - Parameters are invalid
@@ -108,7 +120,6 @@ src/
     - Total angle turned
     - Distance traveled
     - Time taken
-    - Rotations completed
 
 #### Pen Operations
 

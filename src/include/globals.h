@@ -36,22 +36,8 @@ struct Result
     String failure_reason;
     String success_result;
 
-    String toJSON()
-    {
-        String json = "{\"success\":" + String(success ? "true" : "false");
-
-        if (!success)
-        {
-            json += ",\"failure_reason\":\"" + failure_reason + "\"";
-        }
-        else if (success_result.length() > 0)
-        {
-            json += ",\"success_result\":" + success_result;
-        }
-
-        json += "}";
-        return json;
-    }
+    // Method declaration
+    String toJSON();
 };
 
 #endif // GLOBALS_H

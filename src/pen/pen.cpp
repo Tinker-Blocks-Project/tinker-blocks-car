@@ -11,7 +11,8 @@ Result liftPenUp()
 {
     Result result;
 
-    if (!isPenDown) {
+    if (!isPenDown)
+    {
         result.success = false;
         result.failure_reason = "Pen is already up.";
         result.success_result = "";
@@ -32,7 +33,8 @@ Result putPenDown()
 {
     Result result;
 
-    if (isPenDown) {
+    if (isPenDown)
+    {
         result.success = false;
         result.failure_reason = "Pen is already down.";
         result.success_result = "";

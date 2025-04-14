@@ -7,8 +7,12 @@
 void setupAPI();
 void handleAPIRequests();
 
+// Helper function to parse movement parameters
+MovementParams parseMovementParams(String params);
+
 // API endpoint handlers
 String handleMoveForward(String params);
+String handleMoveBackward(String params);
 String handleTurnLeftRight(String params);
 String handlePenUp();
 String handlePenDown();
