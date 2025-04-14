@@ -8,6 +8,12 @@
 #define WHEEL_CIRCUMFERENCE_CM (WHEEL_DIAMETER_CM * PI)
 #define MAX_SPEED_CM_PER_MS 0.01 // Calibrate this value with real measurements
 
+// TODO: fix these
+const int FRONT_LEFT_MOTOR_INDEX = 0;
+const int FRONT_RIGHT_MOTOR_INDEX = 1;
+const int REAR_LEFT_MOTOR_INDEX = 2;
+const int REAR_RIGHT_MOTOR_INDEX = 3;
+
 // Movement Parameters Structure
 // This structure allows passing any combination of movement parameters
 // while maintaining a consistent interface
@@ -29,10 +35,11 @@ struct MovementParams
 };
 
 // Basic motor controls
-void moveMotor(int motorIndex, int speed, bool forward);
+void moveMotor(int motorIndex, int speed); // speed is a value between -255 and 255
+void moveAllMotors(int speed);
 void stopMotor(int motorIndex);
 void stopAllMotors();
-void moveServo(int servoIndex, int angle);
+void moveSteeringServo(int servoIndex, int angle);
 
 // Movement operations
 Result translate(const MovementParams &params);

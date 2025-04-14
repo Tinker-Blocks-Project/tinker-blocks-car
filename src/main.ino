@@ -30,8 +30,8 @@ void setup()
     penServo.attach(PEN_SERVO_PIN);
 
     // Set initial positions
-    moveServo(0, REF_ANGLE1);
-    moveServo(1, REF_ANGLE2);
+    moveSteeringServo(0, REF_ANGLE1);
+    moveSteeringServo(1, REF_ANGLE2);
     liftPenUp();
 
     // Setup API connection
