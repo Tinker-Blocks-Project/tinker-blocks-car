@@ -1,4 +1,4 @@
-#include "../include/globals.h"
+#include "../include/movement.h"
 
 // Create params from speed and distance, calculate time
 MovementParams MovementParams::fromSpeedAndDistance(int s, float d)
