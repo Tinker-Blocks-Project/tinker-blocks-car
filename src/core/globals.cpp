@@ -6,7 +6,7 @@ const int ENABLE_PINS[] = {4, 6, 3, 8};
 const int SERVO_PINS[] = {2, 11};
 const int ULTRASONIC_TRIGGER_PIN = 9;
 const int ULTRASONIC_ECHO_PIN = 10;
-const int PEN_SERVO_PIN = 12;
+const int PEN_SERVO_PIN = 7;
 
 // Speed and Movement Constants
 const int FORWARD_SPEED = 100;
