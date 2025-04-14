@@ -1,5 +1,12 @@
 #include "../include/pen.h"
 
+const int PEN_SERVO_PIN = 12;
+const int PEN_UP_ANGLE = 0;
+const int PEN_DOWN_ANGLE = 90;
+bool isPenDown = false;
+
+Servo penServo;
+
 void setupPen()
 {
     penServo.attach(PEN_SERVO_PIN);

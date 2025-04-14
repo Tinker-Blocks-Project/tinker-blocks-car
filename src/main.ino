@@ -15,10 +15,7 @@ void setup()
     pinMode(ULTRASONIC_TRIGGER_PIN, OUTPUT);
     pinMode(ULTRASONIC_ECHO_PIN, INPUT);
 
-    // Attach servos
-    penServo.attach(PEN_SERVO_PIN);
-
-    // Set initial positions
+    setupPen();
     liftPenUp();
 
     // Setup API connection

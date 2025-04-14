@@ -3,7 +3,6 @@
 
 #include "globals.h"
 
-
 // Pen operations
 Result liftPenUp();
 Result putPenDown();

@@ -6,15 +6,6 @@
 
 extern const int ULTRASONIC_TRIGGER_PIN;
 extern const int ULTRASONIC_ECHO_PIN;
-extern const int PEN_SERVO_PIN;
-
-// Servo Objects
-extern Servo penServo;
-
-// Pen States
-extern const int PEN_UP_ANGLE;
-extern const int PEN_DOWN_ANGLE;
-extern bool isPenDown;
 
 // Result Structure
 struct Result
