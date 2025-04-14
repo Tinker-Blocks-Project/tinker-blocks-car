@@ -9,16 +9,17 @@ void setup()
     Serial.begin(115200);
     Serial.println("Tinker Blocks Car - Starting up...");
 
+    Serial.println("Setting up movement...");
     setupMovement();
 
-    // Initialize ultrasonic sensor pins
-    pinMode(ULTRASONIC_TRIGGER_PIN, OUTPUT);
-    pinMode(ULTRASONIC_ECHO_PIN, INPUT);
-
+    Serial.println("Setting up pen...");
     setupPen();
     liftPenUp();
 
-    // Setup API connection
+    Serial.println("Setting up ultrasonic sensor...");
+    setupUltrasonic();
+
+    Serial.println("Setting up API...");
     setupAPI();
 
     Serial.println("Initialization complete!");

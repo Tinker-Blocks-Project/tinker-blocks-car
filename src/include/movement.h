@@ -8,13 +8,9 @@ const int FRONT_LEFT_MOTOR_INDEX = 0;
 const int FRONT_RIGHT_MOTOR_INDEX = 1;
 const int REAR_LEFT_MOTOR_INDEX = 2;
 const int REAR_RIGHT_MOTOR_INDEX = 3;
-
 const int FRONT_LEFT_SERVO_INDEX = 0;
 const int FRONT_RIGHT_SERVO_INDEX = 1;
 
-// Movement Parameters Structure
-// This structure allows passing any combination of movement parameters
-// while maintaining a consistent interface
 struct MovementParams
 {
     // Only set the parameters you want to control

@@ -1,9 +1,5 @@
 #include "../include/globals.h"
 
-
-const int ULTRASONIC_TRIGGER_PIN = 9;
-const int ULTRASONIC_ECHO_PIN = 10;
-
 // =============== Result Implementation ===============
 
 String Result::toJSON()

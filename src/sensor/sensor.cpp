@@ -1,19 +1,22 @@
 #include "../include/sensor.h"
 
+const int TRIGGER_PIN = 9;
+const int ECHO_PIN = 10;
+
 void setupUltrasonic()
 {
-    pinMode(TRIG_PIN, OUTPUT);
+    pinMode(TRIGGER_PIN, OUTPUT);
     pinMode(ECHO_PIN, INPUT);
 }
 
 // Returns distance in centimeters
 float getDistance()
 {
-    digitalWrite(TRIG_PIN, LOW);
+    digitalWrite(TRIGGER_PIN, LOW);
     delayMicroseconds(2);
-    digitalWrite(TRIG_PIN, HIGH);
+    digitalWrite(TRIGGER_PIN, HIGH);
     delayMicroseconds(10);
-    digitalWrite(TRIG_PIN, LOW);
+    digitalWrite(TRIGGER_PIN, LOW);
 
     // Read echo time
     long duration = pulseIn(ECHO_PIN, HIGH, 30000); // Timeout at 30ms (~500cm)
