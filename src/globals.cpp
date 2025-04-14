@@ -1,4 +1,4 @@
-#include "../include/globals.h"
+#include "include/globals.h"
 
 // =============== Result Implementation ===============
 

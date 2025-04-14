@@ -1,4 +1,4 @@
-#include "../include/pen.h"
+#include "include/pen.h"
 
 const int PEN_SERVO_PIN = 12;
 const int PEN_UP_ANGLE = 0;

@@ -1,4 +1,4 @@
-#include "../include/sensor.h"
+#include "include/sensor.h"
 
 const int TRIGGER_PIN = 9;
 const int ECHO_PIN = 10;
