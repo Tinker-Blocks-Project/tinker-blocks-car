@@ -1,11 +1,8 @@
-#include "../include/movement.h"
+#include "include/movement.h"
 
 const int MOTOR_PINS[] = {22, 23, 24, 25, 30, 31, 32, 33};
 const int ENABLE_PINS[] = {4, 6, 3, 8};
 const int SERVO_PINS[] = {2, 11};
-
-const int FRONT_LEFT_REF_ANGLE = 105; // the angle for the left front wheel to be straight forward
-const int FRONT_RIGHT_REF_ANGLE = 90; // the angle for the right front wheel to be straight forward
 
 Servo frontLeftServo;
 Servo frontRightServo;
@@ -30,8 +27,8 @@ void setupMovement()
     frontLeftServo.attach(SERVO_PINS[FRONT_LEFT_SERVO_INDEX]);
     frontRightServo.attach(SERVO_PINS[FRONT_RIGHT_SERVO_INDEX]);
 
-    steeringServo(FRONT_LEFT_SERVO_INDEX, FRONT_LEFT_REF_ANGLE);
-    steeringServo(FRONT_RIGHT_SERVO_INDEX, FRONT_RIGHT_REF_ANGLE);
+    steerServo(FRONT_LEFT_SERVO_INDEX, FRONT_LEFT_REF_ANGLE);
+    steerServo(FRONT_RIGHT_SERVO_INDEX, FRONT_RIGHT_REF_ANGLE);
 }
 
 void moveMotor(int motorIndex, int speed)
@@ -80,7 +77,7 @@ void stopAllMotors()
     stopMotor(REAR_RIGHT_MOTOR_INDEX);
 }
 
-void steeringServo(int servoIndex, int angle)
+void steerServo(int servoIndex, int angle)
 {
     if (servoIndex == FRONT_LEFT_SERVO_INDEX)
     {
@@ -90,14 +87,10 @@ void steeringServo(int servoIndex, int angle)
     {
         frontRightServo.write(angle);
     }
-    else
-    {
-        throw std::invalid_argument("Invalid servo index");
-    }
 }
 
-void steeringAllServos(int angle)
+void steerAllServos(int angle)
 {
-    steeringServo(FRONT_LEFT_SERVO_INDEX, angle);
-    steeringServo(FRONT_RIGHT_SERVO_INDEX, angle);
+    steerServo(FRONT_LEFT_SERVO_INDEX, angle);
+    steerServo(FRONT_RIGHT_SERVO_INDEX, angle);
 }

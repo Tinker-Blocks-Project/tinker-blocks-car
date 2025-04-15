@@ -3,6 +3,7 @@
 
 #include "globals.h"
 
+void setupPen();
 Result liftPenUp();
 Result putPenDown();
 Result togglePen();

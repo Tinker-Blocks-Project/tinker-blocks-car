@@ -1,5 +1,5 @@
-#include "../include/movement.h"
-#include "../include/sensor.h"
+#include "include/movement.h"
+#include "include/sensor.h"
 
 Result translate(const MovementParams &params)
 {

@@ -27,11 +27,8 @@ void setup()
 
 void loop()
 {
-    // Handle API requests
-    handleAPIRequests();
-
-    // Add any other continuous operations here
-
-    // Small delay to prevent overwhelming the processor
-    delay(10);
+    moveAllMotors(100);
+    delay(3000);
+    stopAllMotors();
+    delay(3000);
 }

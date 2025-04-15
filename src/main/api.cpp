@@ -1,7 +1,7 @@
-#include "../include/api.h"
-#include "../include/movement.h"
-#include "../include/pen.h"
-#include "../include/sensor.h"
+#include "include/api.h"
+#include "include/movement.h"
+#include "include/pen.h"
+#include "include/sensor.h"
 
 void setupAPI()
 {
@@ -37,7 +37,7 @@ String handleMoveForward(String params)
     }
 
     // Call the unified movement function
-    Result result = moveWithParams(movementParams);
+    Result result = translate(movementParams);
     return result.toJSON();
 }
 
@@ -53,7 +53,7 @@ String handleMoveBackward(String params)
     }
 
     // Call the unified movement function
-    Result result = moveWithParams(movementParams);
+    Result result = translate(movementParams);
     return result.toJSON();
 }
 
@@ -86,7 +86,8 @@ String handleTurnLeftRight(String params)
     }
 
     // Call the unified turn function
-    Result result = turnWithParams(direction, radius, movementParams);
+    // Result result = turnWithParams(direction, radius, movementParams);
+    Result result;
     return result.toJSON();
 }
 
@@ -117,6 +118,6 @@ String handleGetDistance()
 {
     Result result;
     result.success = true;
-    result.success_result = String(getDistance());
+    result.success_result = String(getDistanceToObstacle());
     return result.toJSON();
 }

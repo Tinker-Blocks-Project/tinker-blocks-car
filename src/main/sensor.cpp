@@ -10,7 +10,7 @@ void setupUltrasonic()
 }
 
 // Returns distance in centimeters
-float getDistance()
+float getDistanceToObstacle()
 {
     digitalWrite(TRIGGER_PIN, LOW);
     delayMicroseconds(2);
@@ -36,6 +36,6 @@ float getDistance()
 // Checks if an obstacle is closer than a given threshold (in cm)
 bool isObstacleDetected(float threshold)
 {
-    float distance = getDistance();
+    float distance = getDistanceToObstacle();
     return distance <= threshold;
 }

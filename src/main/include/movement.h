@@ -8,8 +8,12 @@ const int FRONT_LEFT_MOTOR_INDEX = 0;
 const int FRONT_RIGHT_MOTOR_INDEX = 1;
 const int REAR_LEFT_MOTOR_INDEX = 2;
 const int REAR_RIGHT_MOTOR_INDEX = 3;
+
 const int FRONT_LEFT_SERVO_INDEX = 0;
 const int FRONT_RIGHT_SERVO_INDEX = 1;
+
+const int FRONT_LEFT_REF_ANGLE = 105; // the angle for the left front wheel to be straight forward
+const int FRONT_RIGHT_REF_ANGLE = 90; // the angle for the right front wheel to be straight forward
 
 struct MovementParams
 {
@@ -34,8 +38,8 @@ void moveMotor(int motorIndex, int speed); // speed is a value between -255 and 
 void moveAllMotors(int speed);
 void stopMotor(int motorIndex);
 void stopAllMotors();
-void steeringServo(int servoIndex, int angle);
-void steeringAllServos(int angle);
+void steerServo(int servoIndex, int angle);
+void steerAllServos(int angle);
 
 // Movement operations
 Result translate(const MovementParams &params);

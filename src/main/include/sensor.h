@@ -4,7 +4,7 @@
 #include "globals.h"
 
 void setupUltrasonic();
-float getDistance();
+float getDistanceToObstacle();
 bool isObstacleDetected(float threshold = 20.0); // Default threshold at 20cm
 
 #endif // SENSOR_H

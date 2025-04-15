@@ -1,5 +1,5 @@
-#include "../include/movement.h"
-#include "../include/sensor.h"
+#include "include/movement.h"
+#include "include/sensor.h"
 
 Result rotate(const String &direction, float radius, const MovementParams &params)
 {
@@ -49,8 +49,8 @@ Result rotate(const String &direction, float radius, const MovementParams &param
     if (direction == "left")
     {
         // Turn left: both wheels point left
-        moveSteeringServo(FRONT_LEFT_SERVO_INDEX, REF_ANGLE1 - steeringAngle);
-        moveSteeringServo(FRONT_RIGHT_SERVO_INDEX, REF_ANGLE2 - steeringAngle);
+        steerServo(FRONT_LEFT_SERVO_INDEX, FRONT_LEFT_REF_ANGLE - steeringAngle);
+        steerServo(FRONT_RIGHT_SERVO_INDEX, FRONT_RIGHT_REF_ANGLE - steeringAngle);
 
         // For sharper turns, we can also adjust motor speeds to create differential turning
         if (radius < 50)
@@ -70,8 +70,8 @@ Result rotate(const String &direction, float radius, const MovementParams &param
     else // direction == "right"
     {
         // Turn right: both wheels point right
-        moveSteeringServo(FRONT_LEFT_SERVO_INDEX, REF_ANGLE1 + steeringAngle);
-        moveSteeringServo(FRONT_RIGHT_SERVO_INDEX, REF_ANGLE2 + steeringAngle);
+        steerServo(FRONT_LEFT_SERVO_INDEX, FRONT_LEFT_REF_ANGLE + steeringAngle);
+        steerServo(FRONT_RIGHT_SERVO_INDEX, FRONT_RIGHT_REF_ANGLE + steeringAngle);
 
         // For sharper turns, adjust motor speeds
         if (radius < 50)
@@ -102,8 +102,8 @@ Result rotate(const String &direction, float radius, const MovementParams &param
     stopAllMotors();
 
     // Reset steering to straight position
-    moveSteeringServo(FRONT_LEFT_SERVO_INDEX, REF_ANGLE1);
-    moveSteeringServo(FRONT_RIGHT_SERVO_INDEX, REF_ANGLE2);
+    steerServo(FRONT_LEFT_SERVO_INDEX, FRONT_LEFT_REF_ANGLE);
+    steerServo(FRONT_RIGHT_SERVO_INDEX, FRONT_RIGHT_REF_ANGLE);
 
     // Prepare success result
     result.success = true;

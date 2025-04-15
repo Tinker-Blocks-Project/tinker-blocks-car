@@ -2,6 +2,7 @@
 #define API_H
 
 #include "globals.h"
+#include "movement.h"
 
 // API initialization
 void setupAPI();
