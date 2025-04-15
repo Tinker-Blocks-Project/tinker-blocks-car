@@ -33,8 +33,8 @@ void setupMovement()
 
 void moveMotor(int motorIndex, int speed)
 {
-    if (motorIndex == 3)
-    { // motor 4 is reversed
+    if (motorIndex != 3)
+    { // motor 4 is the only one not reversed in the car
         speed = -speed;
     }
 

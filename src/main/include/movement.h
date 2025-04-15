@@ -4,10 +4,10 @@
 #include "globals.h"
 
 // TODO: fix these
-const int FRONT_LEFT_MOTOR_INDEX = 0;
-const int FRONT_RIGHT_MOTOR_INDEX = 1;
-const int REAR_LEFT_MOTOR_INDEX = 2;
-const int REAR_RIGHT_MOTOR_INDEX = 3;
+const int FRONT_LEFT_MOTOR_INDEX = 1;
+const int FRONT_RIGHT_MOTOR_INDEX = 0;
+const int REAR_LEFT_MOTOR_INDEX = 3;
+const int REAR_RIGHT_MOTOR_INDEX = 2;
 
 const int FRONT_LEFT_SERVO_INDEX = 0;
 const int FRONT_RIGHT_SERVO_INDEX = 1;

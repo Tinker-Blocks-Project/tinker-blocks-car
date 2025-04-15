@@ -23,12 +23,12 @@ void setup()
     setupAPI();
 
     Serial.println("Initialization complete!");
+
+
+    translate(MovementParams::fromSpeedAndDistance(100, 5));
 }
 
 void loop()
 {
-    moveAllMotors(100);
-    delay(3000);
-    stopAllMotors();
-    delay(3000);
+    delay(10);
 }
