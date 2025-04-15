@@ -1,7 +1,7 @@
 #include "include/sensor.h"
 
-const int TRIGGER_PIN = 9;
-const int ECHO_PIN = 10;
+const int TRIGGER_PIN = 40;
+const int ECHO_PIN = 41;
 
 void setupUltrasonic()
 {
@@ -27,7 +27,7 @@ float getDistanceToObstacle()
     // If no valid reading, return a high value
     if (duration == 0)
     {
-        return 500.0;
+        return -1;
     }
 
     return distanceCm;

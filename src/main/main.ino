@@ -6,7 +6,7 @@
 
 void setup()
 {
-    Serial.begin(115200);
+    Serial.begin(9600);
     Serial.println("Tinker Blocks Car - Starting up...");
 
     Serial.println("Setting up movement...");
