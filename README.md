@@ -16,6 +16,7 @@ A small custom-built wooden car, with the following features:
 - Voltage regulator to step down the voltage to 5V for the Arduino
 - Small servo to control the rotation of a Pen, which is used to draw as the car moves
 - ESP32, to allow wifi communication with the Arduino (e.g. via api endpoints that the Raspberry Pi will call)
+- MPU-6050 Gyroscope and Accelerometer, for precise movement tracking and orientation sensing
 
 ## The Arduino Code
 
@@ -30,23 +31,23 @@ The code is organized into several modules to improve maintainability and separa
 
 ```
 src/
-├── main.ino          - Main Arduino sketch file with setup() and loop()
-├── include/          - Header files directory
-│   ├── globals.h     - Global constants, variables, and structures
-│   ├── movement.h    - Movement-related function declarations
-│   ├── pen.h         - Pen control function declarations
-│   ├── sensor.h      - Sensor function declarations
-│   └── api.h         - API endpoint declarations
-├── core/             - Core functionality
-│   └── globals.cpp   - Implementation of global variables
-├── movement/         - Movement control
-│   └── movement.cpp  - Implementation of movement functions
-├── pen/              - Pen control
-│   └── pen.cpp       - Implementation of pen functions
-├── sensor/           - Sensor functionality
-│   └── sensor.cpp    - Implementation of sensor functions
-└── api/              - API handling
-    └── api.cpp       - Implementation of API endpoints
+├── main.ino                - Main Arduino sketch file with setup() and loop()
+├── include/                - Header files directory
+│   ├── globals.h           - Global constants, variables, and structures
+│   ├── movement.h          - Movement-related function declarations
+│   ├── pen.h               - Pen control function declarations
+│   ├── sensor.h            - Sensor function declarations
+│   ├── gyro.h              - Gyro function declarations
+│   └── api.h               - API endpoint declarations
+├── globals.cpp
+├── movement_basic.cpp
+├── movement_params.cpp
+├── movement_translate.cpp
+├── movement_rotate.cpp
+├── pen.cpp
+├── sensor.cpp
+├── gyro.cpp
+└── api.cpp
 ```
 
 ### API Reference
@@ -149,3 +150,36 @@ Rules for using movement parameters:
 - **Get the distance to the nearest object in front of the car**
   - No parameters
   - Success: (distance in cm or 0 if no object is detected)
+
+#### Gyro Operations
+
+- **Initialize the gyro**
+  - No parameters
+  - Success: Gyro is initialized and ready to use
+
+- **Calibrate the gyro**
+  - No parameters
+  - Note: Should be called when the car is stationary
+  - Success: Calibration values are calculated and stored
+  - **Calibration Process:**
+    1. Warm-up period: Takes 50 readings with 10ms delay to stabilize the sensor
+    2. Calibration phase: Takes 1000 readings with 5ms delay between each reading
+    3. For each axis (X, Y, Z):
+      - Calculates the average of all readings
+      - Stores these averages as calibration offsets
+    4. These offsets are automatically subtracted from all future readings
+
+- **Get gyro data**
+  - No parameters
+  - Success: Returns current gyro and accelerometer readings
+  ```json
+  {
+    "accelX": float,
+    "accelY": float,
+    "accelZ": float,
+    "gyroX": float,
+    "gyroY": float,
+    "gyroZ": float,
+    "temperature": float
+  }
+  ```

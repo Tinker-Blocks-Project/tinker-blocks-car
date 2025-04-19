@@ -12,7 +12,7 @@ const int REAR_RIGHT_MOTOR_INDEX = 2;
 const int FRONT_LEFT_SERVO_INDEX = 1;
 const int FRONT_RIGHT_SERVO_INDEX = 0;
 
-const int FRONT_LEFT_REF_ANGLE = 93;  // the angle for the left front wheel to be straight forward
+const int FRONT_LEFT_REF_ANGLE = 93;   // the angle for the left front wheel to be straight forward
 const int FRONT_RIGHT_REF_ANGLE = 104; // the angle for the right front wheel to be straight forward
 
 struct MovementParams
