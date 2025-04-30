@@ -26,6 +26,10 @@ void setup()
     Serial.println("Calibrating gyro...");
     calibrateGyro();
 
+    Serial.println("Establishing reference yaw...");
+    establishReferenceYaw(100, 500); // Move forward at speed 100 for 500ms
+    Serial.println("Reference yaw established: " + String(getReferenceYaw(), 2) + "°");
+
     Serial.println("Setting up API...");
     setupAPI();
 
@@ -34,12 +38,7 @@ void setup()
 
 void loop()
 {
-    // translate(MovementParams::fromSpeedAndDistance(100, 5));
+    translate(MovementParams::fromSpeedAndDistance(150, 200));
 
-    // Get and print gyro data
-    GyroData data = getGyroData();
-    Serial.println("Gyro Data:");
-    Serial.println(data.toJSON());
-
-    delay(500); // Print every second
+    delay(5000);
 }

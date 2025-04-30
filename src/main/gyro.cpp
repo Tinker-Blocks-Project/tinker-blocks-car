@@ -1,10 +1,16 @@
 #include "include/gyro.h"
+#include "include/movement.h"
 
 // Create MPU6050 object
 Adafruit_MPU6050 mpu;
 
 // Store calibration values
 GyroData calibration;
+
+// Yaw tracking
+float currentYaw = 0.0;
+unsigned long lastYawUpdate = 0;
+float referenceYaw = 0.0; // Reference "north" yaw
 
 // GyroData method implementations
 String GyroData::toJSON() const
@@ -41,26 +47,26 @@ bool setupGyro()
     // Set accelerometer range to +-8G
     mpu.setAccelerometerRange(MPU6050_RANGE_8_G);
 
-    // Set gyro range to +- 500 deg/s
-    mpu.setGyroRange(MPU6050_RANGE_500_DEG);
+    // Set gyro range to +- 250 deg/s (reduced from 500 for slower response)
+    mpu.setGyroRange(MPU6050_RANGE_250_DEG);
 
-    // Set filter bandwidth to 21 Hz
-    mpu.setFilterBandwidth(MPU6050_BAND_21_HZ);
+    // Set filter bandwidth to 44 Hz (increased from 21 Hz for smoother readings)
+    mpu.setFilterBandwidth(MPU6050_BAND_44_HZ);
 
     return true;
 }
 
 void calibrateGyro()
 {
-    // Warm up period
-    for (int i = 0; i < 50; i++)
+    // Warm up period (reduced from 100 to 20 readings)
+    for (int i = 0; i < 20; i++)
     {
         getGyroData();
-        delay(10);
+        delay(5); // Reduced from 10ms
     }
 
-    // Take multiple readings and average them
-    const int numReadings = 1000;
+    // Take multiple readings and average them (reduced from 1000 to 100)
+    const int numReadings = 100;
     GyroData sum;
     sum.accelX = 0;
     sum.accelY = 0;
@@ -79,7 +85,7 @@ void calibrateGyro()
         sum.gyroX += data.gyroX;
         sum.gyroY += data.gyroY;
         sum.gyroZ += data.gyroZ;
-        delay(5);
+        delay(5); // Reduced from 20ms
     }
 
     // Calculate and store calibration values
@@ -109,4 +115,56 @@ GyroData getGyroData()
     data.applyCalibration(calibration);
 
     return data;
+}
+
+float getYaw()
+{
+    GyroData data = getGyroData();
+    unsigned long now = millis();
+    float dt = (now - lastYawUpdate) / 1000.0; // Convert to seconds
+    lastYawUpdate = now;
+
+    // Integrate gyro Z (yaw) rate to get angle
+    currentYaw += data.gyroZ * dt;
+    return currentYaw;
+}
+
+void resetYaw()
+{
+    currentYaw = 0.0;
+    lastYawUpdate = millis();
+}
+
+void setReferenceYaw()
+{
+    referenceYaw = getYaw();
+}
+
+float getReferenceYaw()
+{
+    return referenceYaw;
+}
+
+float getRelativeYaw()
+{
+    return getYaw() - referenceYaw;
+}
+
+bool establishReferenceYaw(int speed, int durationMs)
+{
+    // Reset yaw before starting
+    resetYaw();
+
+    // Move forward to establish direction
+    moveAllMotors(speed);
+    delay(durationMs);
+    stopAllMotors();
+
+    // Wait for car to stop
+    delay(500);
+
+    // Set current yaw as reference
+    setReferenceYaw();
+
+    return true;
 }

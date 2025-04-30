@@ -30,4 +30,22 @@ void calibrateGyro();
 // Get current gyro readings
 GyroData getGyroData();
 
+// Get current yaw angle in degrees
+float getYaw();
+
+// Reset yaw to zero
+void resetYaw();
+
+// Set the current yaw as the reference "north"
+void setReferenceYaw();
+
+// Get the reference "north" yaw
+float getReferenceYaw();
+
+// Get yaw relative to reference "north"
+float getRelativeYaw();
+
+// Establish reference yaw by moving forward
+bool establishReferenceYaw(int speed = 100, int durationMs = 500);
+
 #endif // GYRO_H
