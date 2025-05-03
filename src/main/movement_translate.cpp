@@ -40,6 +40,9 @@ Result translate(const MovementParams &params)
     int leftSpeed = baseSpeed;
     int rightSpeed = baseSpeed;
 
+    // Store the initial relative yaw at the start of the movement
+    float initialRelativeYaw = getRelativeYaw(true);
+
     // Start movement
     unsigned long startTime = millis();
     unsigned long endTime = startTime + params.timeMs;
@@ -47,8 +50,9 @@ Result translate(const MovementParams &params)
     while (millis() < endTime)
     {
         // Get current yaw relative to reference
-        float currentYaw = getRelativeYaw();
-        float yawError = currentYaw; // We want to maintain 0° relative to reference
+        float currentYaw = getRelativeYaw(true);
+        // Calculate yaw error relative to the initial yaw at the start of this movement
+        float yawError = currentYaw - initialRelativeYaw;
 
         // Adjust motor speeds based on yaw error
         if (abs(yawError) > YAW_THRESHOLD)
@@ -111,7 +115,7 @@ Result translate(const MovementParams &params)
     String successData = "{";
     successData += "\"distance_traveled\":" + String(params.distance) + ",";
     successData += "\"time_taken\":" + String(params.timeMs) + ",";
-    successData += "\"final_yaw\":" + String(getRelativeYaw(), 2);
+    successData += "\"final_yaw\":" + String(getRelativeYaw(true), 2);
     successData += "}";
     result.success_result = successData;
 
