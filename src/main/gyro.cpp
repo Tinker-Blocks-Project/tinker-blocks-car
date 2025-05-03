@@ -117,16 +117,23 @@ GyroData getGyroData()
     return data;
 }
 
-float getYaw()
+float getYaw(bool degrees)
 {
     GyroData data = getGyroData();
     unsigned long now = millis();
     float dt = (now - lastYawUpdate) / 1000.0; // Convert to seconds
     lastYawUpdate = now;
 
-    // Integrate gyro Z (yaw) rate to get angle
+    // Integrate gyro Z (yaw) rate to get angle in radians
     currentYaw += data.gyroZ * dt;
-    return currentYaw;
+    if (degrees)
+    {
+        return currentYaw * (180.0 / PI);
+    }
+    else
+    {
+        return currentYaw;
+    }
 }
 
 void resetYaw()
@@ -135,9 +142,9 @@ void resetYaw()
     lastYawUpdate = millis();
 }
 
-void setReferenceYaw()
+void setReferenceYaw(bool degrees)
 {
-    referenceYaw = getYaw();
+    referenceYaw = getYaw(degrees);
 }
 
 float getReferenceYaw()
@@ -145,9 +152,9 @@ float getReferenceYaw()
     return referenceYaw;
 }
 
-float getRelativeYaw()
+float getRelativeYaw(bool degrees)
 {
-    return getYaw() - referenceYaw;
+    return getYaw(degrees) - referenceYaw;
 }
 
 bool establishReferenceYaw(int speed, int durationMs)
@@ -164,7 +171,7 @@ bool establishReferenceYaw(int speed, int durationMs)
     delay(500);
 
     // Set current yaw as reference
-    setReferenceYaw();
+    setReferenceYaw(false);
 
     return true;
 }

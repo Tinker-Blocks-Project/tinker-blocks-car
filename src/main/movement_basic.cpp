@@ -77,20 +77,14 @@ void stopAllMotors()
     stopMotor(REAR_RIGHT_MOTOR_INDEX);
 }
 
-void steerServo(int servoIndex, int angle)
+void steerServo(int servoIndex, int angle, bool fromReference)
 {
     if (servoIndex == FRONT_LEFT_SERVO_INDEX)
     {
-        frontLeftServo.write(angle);
+        frontLeftServo.write(fromReference ? angle + FRONT_LEFT_REF_ANGLE : angle);
     }
     else if (servoIndex == FRONT_RIGHT_SERVO_INDEX)
     {
-        frontRightServo.write(angle);
+        frontRightServo.write(fromReference ? angle + FRONT_RIGHT_REF_ANGLE : angle);
     }
-}
-
-void steerAllServos(int angle)
-{
-    steerServo(FRONT_LEFT_SERVO_INDEX, angle);
-    steerServo(FRONT_RIGHT_SERVO_INDEX, angle);
 }

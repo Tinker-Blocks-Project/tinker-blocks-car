@@ -38,11 +38,10 @@ void moveMotor(int motorIndex, int speed); // speed is a value between -255 and 
 void moveAllMotors(int speed);
 void stopMotor(int motorIndex);
 void stopAllMotors();
-void steerServo(int servoIndex, int angle);
-void steerAllServos(int angle);
+void steerServo(int servoIndex, int angle, bool fromReference = false);
 
 // Movement operations
 Result translate(const MovementParams &params);
-Result rotate(const String &direction, float radius, const MovementParams &params);
+Result rotate(int speed, float radius, float angleDeg);
 
 #endif // MOVEMENT_H

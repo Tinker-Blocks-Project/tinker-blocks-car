@@ -38,7 +38,9 @@ void setup()
 
 void loop()
 {
-    translate(MovementParams::fromSpeedAndDistance(150, 200));
+    translate(MovementParams::fromSpeedAndDistance(150, 150));
+    delay(1000);
 
-    delay(5000);
+    rotate(100, 150, 90);
+    delay(1000);
 }
