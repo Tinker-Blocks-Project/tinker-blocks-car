@@ -230,132 +230,235 @@ Response:
 
 ### API Reference
 
-#### Movement Parameters
-
-Movement operations use a unified `MovementParams` structure that allows for flexible parameter combinations. You need to specify only two parameters, and the third will be automatically calculated:
-
+All commands to the Arduino follow this format: `command:{"param1":"value1","param2":value2}`
+Responses are always JSON objects with the following structure:
 ```json
 {
-  "speed": int,         // -255 to 255, negative for backward movement
-  "time_ms": int,       // Time in milliseconds
-  "distance_cm": float  // Distance in centimeters
+  "success": true|false,
+  "failure_reason": "string", // only if success is false
+  "success_result": "string or json object" // only if success is true
 }
 ```
 
-Valid parameter combinations:
-- speed & distance
-- speed & time
-- distance & time
+#### 1. Movement Commands
 
-Rules for using movement parameters:
-- For backward movement, use negative speed values
-- Internal calculations use physics constants that can be calibrated for your specific hardware
+Command: `move`
 
-#### Return Values
+**Parameters:**
+- You must provide at least 2 of these 3 parameters:
+  - `speed` (int): -255 to 255, negative values for backward movement
+  - `distance` (float): Distance in centimeters
+  - `timeMs` (unsigned long): Time in milliseconds 
+- Optional parameters:
+  - `checkUltrasonic` (boolean): Whether to check for obstacles (default: true)
+  - `enableYawCorrection` (boolean): Whether to use gyro for straight movement (default: true)
 
-- Operations return a Result object:
+**Parameter Combinations:**
+1. `speed` + `distance`: Car will calculate the required time
+2. `speed` + `timeMs`: Car will calculate the distance covered
+3. `distance` + `timeMs`: Car will calculate the required speed
+
+**Examples:**
+```
+move:{"speed":100,"distance":20}
+move:{"speed":-150,"timeMs":1000}
+move:{"distance":30,"timeMs":2000}
+move:{"speed":200,"distance":50,"checkUltrasonic":false}
+```
+
+**Success Response:**
 ```json
 {
   "success": true,
-  "failure_reason": "string",
-  "success_result": {}
+  "success_result": "{\"distance_traveled\":20.00,\"time_taken\":784,\"final_yaw\":0.32}"
 }
 ```
 
-- `success` is true if the operation was successful
-- `failure_reason` is a string that explains why the operation failed, if it failed. For example:
-  - Ultrasonic sensor indicates an obstacle in front of the car
-  - Pen is already down
-  - Car is already moving
-- `success_result` is the result of the operation if it was successful, defined by the operation. For example:
-  - Distance traveled
-  - Time taken
-  - Pen state
+**Failure Response:**
+```json
+{
+  "success": false,
+  "failure_reason": "Obstacle detected at 12.45cm"
+}
+```
 
-#### Translation Movement
+#### 2. Rotation Commands
 
-- **Move forward**
-  - Parameters: MovementParams with any valid combination of speed, time, and distance
-  - Failure:
-    - Ultrasonic sensor indicates an obstacle in front of the car
-  - Success:
-    - Distance traveled
-    - Time taken
+Command: `rotate`
 
-- **Move backward**
-  - Same as move forward, but with negative speed
+**Parameters:**
+- Required:
+  - `angle` (float): Angle in degrees. Positive for left/CCW, negative for right/CW
+- Optional:
+  - `speed` (int): Rotation speed between 1-255 (default: 100)
+  - `absolute` (boolean): If true, rotate to absolute heading; if false, relative rotation (default: false)
 
-#### Rotation Movement
+**Examples:**
+```
+rotate:{"angle":90,"speed":100}
+rotate:{"angle":-45,"speed":80}
+rotate:{"angle":0,"speed":100,"absolute":true}
+```
 
-- **Turn left or right**
-  - Required parameters:
-    - angle: turning angle in degrees (positive for left/counterclockwise, negative for right/clockwise)
-    - speed: rotation speed (0-255)
-    - absolute: optional boolean to indicate absolute vs. relative rotation
-  - Failure:
-    - Parameters are invalid
-  - Success:
-    - Total angle turned
-    - Time taken
+**Success Response:**
+```json
+{
+  "success": true,
+  "success_result": "{\"angle_turned\":90.00,\"time_ms\":856,\"direction_changes\":0}"
+}
+```
 
-#### Pen Operations
+**Failure Response:**
+```json
+{
+  "success": false,
+  "failure_reason": "Invalid speed. Must be between 1 and 255."
+}
+```
 
-- **Lift the pen up**
-  - No parameters
-  - Failure:
-    - Pen is already up
-  - Success:
-    - Pen is up
+#### 3. Pen Control Commands
 
-- **Put the pen down**
-  - No parameters
-  - Failure:
-    - Pen is already down
-  - Success:
-    - Pen is down
+Command: `pen`
 
-- **Toggle the pen**
-  - No parameters
+**Parameters:**
+- Required:
+  - `action` (string): One of "up", "down", or "position"
+- Required for "position" action:
+  - `position` (int): Position value for the servo (typically 0-180)
 
-- **Get the pen state**
-  - No parameters
-  - Success: (up or down)
+**Examples:**
+```
+pen:{"action":"up"}
+pen:{"action":"down"}
+pen:{"action":"position","position":45}
+```
 
-#### Ultrasonic Sensor
+**Success Response:**
+```json
+{
+  "success": true,
+  "success_result": "Pen lifted up"
+}
+```
 
-- **Get the distance to the nearest object in front of the car**
-  - No parameters
-  - Success: (distance in cm or 0 if no object is detected)
+**Failure Response:**
+```json
+{
+  "success": false,
+  "failure_reason": "Missing or invalid 'position' parameter for pen position"
+}
+```
 
-#### Gyro Operations
+#### 4. Gyroscope Commands
 
-- **Initialize the gyro**
-  - No parameters
-  - Success: Gyro is initialized and ready to use
+Command: `gyro`
 
-- **Calibrate the gyro**
-  - No parameters
-  - Note: Should be called when the car is stationary
-  - Success: Calibration values are calculated and stored
-  - **Calibration Process:**
-    1. Warm-up period: Takes readings with short delays to stabilize the sensor
-    2. Calibration phase: Takes multiple readings with delay between each reading
-    3. For each axis (X, Y, Z):
-      - Calculates the average of all readings
-      - Stores these averages as calibration offsets
-    4. These offsets are automatically subtracted from all future readings
+**Parameters:**
+- Required:
+  - `action` (string): One of "calibrate", "data", "yaw", or "reference"
 
-- **Get gyro data**
-  - No parameters
-  - Success: Returns current gyro and accelerometer readings
-  ```json
-  {
-    "accelX": float,
-    "accelY": float,
-    "accelZ": float,
-    "gyroX": float,
-    "gyroY": float,
-    "gyroZ": float,
-    "temperature": float
-  }
-  ```
+**Examples:**
+```
+gyro:{"action":"calibrate"}
+gyro:{"action":"data"}
+gyro:{"action":"yaw"}
+gyro:{"action":"reference"}
+```
+
+**Success Response for "calibrate":**
+```json
+{
+  "success": true,
+  "success_result": "Gyro calibrated"
+}
+```
+
+**Success Response for "data":**
+```json
+{
+  "success": true,
+  "success_result": "{\"accelX\":0.012345,\"accelY\":-0.987654,\"accelZ\":9.812345,\"gyroX\":0.000123,\"gyroY\":0.000456,\"gyroZ\":0.000789,\"temperature\":23.45}"
+}
+```
+
+**Success Response for "yaw":**
+```json
+{
+  "success": true,
+  "success_result": "127.84"
+}
+```
+
+**Success Response for "reference":**
+```json
+{
+  "success": true,
+  "success_result": "Reference yaw set"
+}
+```
+
+**Failure Response:**
+```json
+{
+  "success": false,
+  "failure_reason": "Unknown gyro action: invalid_action"
+}
+```
+
+#### 5. Ultrasonic Sensor Commands
+
+Command: `sensor`
+
+**Parameters:**
+- Required:
+  - `action` (string): One of "distance" or "obstacle"
+- Optional for "obstacle" action:
+  - `threshold` (float): Distance threshold in centimeters (default: 10.0)
+
+**Examples:**
+```
+sensor:{"action":"distance"}
+sensor:{"action":"obstacle","threshold":15}
+```
+
+**Success Response for "distance":**
+```json
+{
+  "success": true,
+  "success_result": "24.37"
+}
+```
+
+**Success Response for "obstacle":**
+```json
+{
+  "success": true,
+  "success_result": "false"
+}
+```
+
+**Failure Response:**
+```json
+{
+  "success": false,
+  "failure_reason": "Unknown sensor action: invalid_action"
+}
+```
+
+#### Command Validation & Error Handling
+
+- All commands are validated for proper format and parameter values
+- If a required parameter is missing or has an invalid value, the command will fail
+- In case of JSON parsing errors, you'll receive an error response
+- For movement commands, calculations ensure reasonable values
+- Obstacle detection during movement will abort the command and return a failure with the obstacle distance
+
+#### Communication Protocol Notes
+
+- Commands must end with a newline character ('\n')
+- Serial communication uses 115200 baud rate
+- Responses will be sent as a complete JSON string followed by a newline
+- All JSON values are properly escaped to ensure valid parsing
+- Numeric values in responses have appropriate precision
+  - Float values typically have 2 decimal places
+  - Integer values are represented without decimal places

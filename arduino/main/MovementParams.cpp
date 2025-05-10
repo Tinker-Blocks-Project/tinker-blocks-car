@@ -2,10 +2,6 @@
 
 const float MAX_SPEED_CM_PER_MS = 0.072;
 
-// distance is in cm
-// speed is a percentage of max speed
-// time is in ms
-
 MovementParams MovementParams::fromSpeedAndDistance(int s, float d)
 {
     MovementParams params;

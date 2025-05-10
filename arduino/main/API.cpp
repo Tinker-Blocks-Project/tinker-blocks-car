@@ -78,37 +78,44 @@ Result API::moveCommand(const String &payload)
     Result result;
     result.success = false;
 
-    // Parse movement parameters
+    // Parse all potential movement parameters
     int speed = 0;
     float distance = 0;
     unsigned long timeMs = 0;
     bool checkUltrasonic = true;
     bool enableYawCorrection = true;
 
-    if (!parseJsonInt(payload, "speed", speed))
-    {
-        result.failure_reason = "Missing or invalid 'speed' parameter";
-        return result;
-    }
+    // Parse all available parameters
+    bool hasSpeed = parseJsonInt(payload, "speed", speed);
+    bool hasDistance = parseJsonFloat(payload, "distance", distance);
+    bool hasTimeMs = parseJsonULong(payload, "timeMs", timeMs);
 
-    // These are optional parameters
-    parseJsonFloat(payload, "distance", distance);
+    // Parse optional parameters
     parseJsonBool(payload, "checkUltrasonic", checkUltrasonic);
     parseJsonBool(payload, "enableYawCorrection", enableYawCorrection);
 
-    // If time is provided and not distance, use time-based movement
-    if (parseJsonULong(payload, "timeMs", timeMs) && distance == 0)
+    // We need at least 2 of the 3 parameters (speed, distance, timeMs)
+    // Handle all valid combinations
+
+    if (hasSpeed && hasDistance)
     {
+        // Case 1: Speed and Distance provided - use them to calculate time
+        return motionController.translate(MovementParams::fromSpeedAndDistance(speed, distance), checkUltrasonic, enableYawCorrection);
+    }
+    else if (hasSpeed && hasTimeMs)
+    {
+        // Case 2: Speed and Time provided
         return motionController.translate(MovementParams::fromSpeedAndTime(speed, timeMs), checkUltrasonic, enableYawCorrection);
     }
-    // Otherwise use distance-based movement
-    else if (distance > 0)
+    else if (hasDistance && hasTimeMs)
     {
-        return motionController.translate(MovementParams::fromSpeedAndDistance(speed, distance), checkUltrasonic, enableYawCorrection);
+        // Case 3: Distance and Time provided - calculate required speed
+        return motionController.translate(MovementParams::fromDistanceAndTime(distance, timeMs), checkUltrasonic, enableYawCorrection);
     }
     else
     {
-        result.failure_reason = "Either 'distance' or 'timeMs' must be provided";
+        // Invalid combination
+        result.failure_reason = "Invalid parameter combination. Need at least 2 of: 'speed', 'distance', 'timeMs'";
         return result;
     }
 }
