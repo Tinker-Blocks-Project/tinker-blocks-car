@@ -65,8 +65,12 @@ Result rotate(const String &direction, int speed, float angleDeg)
     float targetAngle = direction == "left" ? angleDeg : -angleDeg;
     float targetRelativeYaw = normalizeAngle(startRelativeYaw + targetAngle);
 
-    float lastYawError = normalizeAngle(targetRelativeYaw - startRelativeYaw);
+    // Simplified approach: use constant speed with minor adjustments
+    int rotationSpeed = max(60, speed); // Ensure minimum speed is high enough to prevent stalling
     unsigned long startTime = millis();
+
+    // Start rotation at full speed
+    setDifferentialSteering(rotationSpeed);
 
     while (true)
     {
@@ -74,40 +78,16 @@ Result rotate(const String &direction, int speed, float angleDeg)
         float yawError = normalizeAngle(targetRelativeYaw - currentRelativeYaw);
         float absError = abs(yawError);
 
-        // Gradual slowdown logic
-        const int minSpeed = 40; // Minimum speed to maintain rotation
-        const int maxSpeed = speed;
-        const float maxError = 30.0f; // Angle at which we use maxSpeed
-
-        float errorRatio = absError / maxError;
-        if (errorRatio > 1.0f)
-            errorRatio = 1.0f;
-
-        // Quadratic scaling: drops off faster as error decreases
-        int currentSpeed = minSpeed + (int)((maxSpeed - minSpeed) * (errorRatio * errorRatio));
-        if (currentSpeed > maxSpeed)
-            currentSpeed = maxSpeed;
-        if (currentSpeed < minSpeed)
-            currentSpeed = minSpeed;
-
-        setDifferentialSteering(currentSpeed);
-
         // Debug prints
-        Serial.print("Current Relative Yaw: ");
+        Serial.print("Current Yaw: ");
         Serial.print(currentRelativeYaw);
-        Serial.print(" | Target Relative Yaw: ");
+        Serial.print(" | Target: ");
         Serial.print(targetRelativeYaw);
-        Serial.print(" | Yaw Error: ");
-        Serial.print(yawError);
-        Serial.print(" | Speed: ");
-        Serial.println(currentSpeed);
+        Serial.print(" | Error: ");
+        Serial.println(absError);
 
-        // Stop if within threshold
-        if (abs(yawError) <= 1.0f)
-            break;
-
-        // Stop if over-extended (sign of error changed)
-        if ((lastYawError > 0 && yawError < 0) || (lastYawError < 0 && yawError > 0))
+        // Stop if within threshold - using a slightly larger threshold
+        if (absError <= 2.0f)
             break;
 
         // Safety timeout - 5 seconds max for a turn
@@ -117,7 +97,6 @@ Result rotate(const String &direction, int speed, float angleDeg)
             break;
         }
 
-        lastYawError = yawError;
         delay(10); // Small delay to not overwhelm the processor
     }
 
