@@ -2,11 +2,12 @@
 #include "include/sensor.h"
 #include "include/gyro.h"
 
-// Constants for yaw-based correction
-const float YAW_THRESHOLD = 0.2;     // degrees (reduced from 0.5)
-const int BASE_CORRECTION = 50;      // Base PWM adjustment (increased from 20)
-const int MIN_SPEED_DIFF = 80;       // Minimum speed difference (increased from 40)
-const float CORRECTION_FACTOR = 5.0; // Multiplier for yaw error (increased from 2.0)
+// Constants for yaw-based correction - reduced aggressiveness
+const float YAW_THRESHOLD = 0.5;        // degrees (increased from 0.2 to be less sensitive)
+const int BASE_CORRECTION = 20;         // Base PWM adjustment (reduced from 50)
+const int MIN_SPEED_DIFF = 40;          // Minimum speed difference (reduced from 80)
+const float CORRECTION_FACTOR = 2.0;    // Multiplier for yaw error (reduced from 5.0)
+const float CORRECTION_SMOOTHING = 0.7; // Smoothing factor for gradual correction (0-1, higher = smoother)
 
 Result translate(const MovementParams &params, bool checkUltrasonic, bool enableYawCorrection)
 {
@@ -40,6 +41,10 @@ Result translate(const MovementParams &params, bool checkUltrasonic, bool enable
     int leftSpeed = baseSpeed;
     int rightSpeed = baseSpeed;
 
+    // Previous iteration speeds for smoothing
+    int prevLeftSpeed = leftSpeed;
+    int prevRightSpeed = rightSpeed;
+
     // Store the initial relative yaw at the start of the movement
     float initialRelativeYaw = getRelativeYaw(true);
 
@@ -65,46 +70,67 @@ Result translate(const MovementParams &params, bool checkUltrasonic, bool enable
             // Calculate yaw error relative to the initial yaw at the start of this movement
             float yawError = currentYaw - initialRelativeYaw;
 
+            // Debug output
+            // Serial.print("Yaw Error: ");
+            // Serial.println(yawError);
+
+            // Reset target speeds to base for this iteration
+            int targetLeftSpeed = baseSpeed;
+            int targetRightSpeed = baseSpeed;
+
             // Adjust motor speeds based on yaw error
             if (abs(yawError) > YAW_THRESHOLD)
             {
                 // Calculate correction based on error magnitude
-                int correction = BASE_CORRECTION + abs(yawError) * CORRECTION_FACTOR;
+                // Use a quadratic scaling for smoother response to small errors
+                float errorRatio = min(abs(yawError) / 10.0, 1.0); // Cap at 10 degrees max error
+                int correction = BASE_CORRECTION + (int)(errorRatio * errorRatio * (MIN_SPEED_DIFF - BASE_CORRECTION));
+
+                // Apply non-linear scaling for more gentle corrections
+                correction = (int)(correction * CORRECTION_FACTOR * sqrt(abs(yawError)));
 
                 if (yawError > 0)
-                {                             // Drifting right
-                    leftSpeed -= correction;  // Inverted: decrease left speed
-                    rightSpeed += correction; // Inverted: increase right speed
+                {
+                    // We're drifting right (positive yaw error)
+                    // To counter this, we need to steer left
+                    targetLeftSpeed += correction;  // Increase left speed
+                    targetRightSpeed -= correction; // Decrease right speed
                 }
                 else
-                {                             // Drifting left
-                    leftSpeed += correction;  // Inverted: increase left speed
-                    rightSpeed -= correction; // Inverted: decrease right speed
-                }
-
-                // Ensure minimum speed difference
-                int speedDiff = abs(leftSpeed - rightSpeed);
-                if (speedDiff < MIN_SPEED_DIFF)
                 {
-                    if (leftSpeed > rightSpeed)
-                    {
-                        leftSpeed += MIN_SPEED_DIFF - speedDiff;
-                    }
-                    else
-                    {
-                        rightSpeed += MIN_SPEED_DIFF - speedDiff;
-                    }
+                    // We're drifting left (negative yaw error)
+                    // To counter this, we need to steer right
+                    targetLeftSpeed -= correction;  // Decrease left speed
+                    targetRightSpeed += correction; // Increase right speed
                 }
 
                 // Ensure speeds stay within bounds
-                leftSpeed = constrain(leftSpeed, 0, 255);
-                rightSpeed = constrain(rightSpeed, 0, 255);
+                targetLeftSpeed = constrain(targetLeftSpeed, 0, 255);
+                targetRightSpeed = constrain(targetRightSpeed, 0, 255);
+
+                // Apply smoothing between current and target speeds
+                leftSpeed = prevLeftSpeed * CORRECTION_SMOOTHING + targetLeftSpeed * (1 - CORRECTION_SMOOTHING);
+                rightSpeed = prevRightSpeed * CORRECTION_SMOOTHING + targetRightSpeed * (1 - CORRECTION_SMOOTHING);
+
+                // Store current speeds for next iteration
+                prevLeftSpeed = leftSpeed;
+                prevRightSpeed = rightSpeed;
+
+                // Debug output
+                // Serial.print("Left: ");
+                // Serial.print(leftSpeed);
+                // Serial.print(" | Right: ");
+                // Serial.println(rightSpeed);
             }
             else
             {
-                // Reset to base speeds if error is small
-                leftSpeed = baseSpeed;
-                rightSpeed = baseSpeed;
+                // Reset to base speeds if error is small (with smoothing)
+                leftSpeed = prevLeftSpeed * CORRECTION_SMOOTHING + baseSpeed * (1 - CORRECTION_SMOOTHING);
+                rightSpeed = prevRightSpeed * CORRECTION_SMOOTHING + baseSpeed * (1 - CORRECTION_SMOOTHING);
+
+                // Store current speeds for next iteration
+                prevLeftSpeed = leftSpeed;
+                prevRightSpeed = rightSpeed;
             }
 
             // Apply direction
@@ -121,8 +147,8 @@ Result translate(const MovementParams &params, bool checkUltrasonic, bool enable
             moveMotor(REAR_RIGHT_MOTOR_INDEX, rightSpeed);
         }
 
-        // Smaller delay for more responsive corrections
-        delay(5); // Reduced from 10ms
+        // Small delay for more responsive corrections
+        delay(5);
     }
 
     // Stop all motors
