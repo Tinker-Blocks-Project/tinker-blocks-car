@@ -38,6 +38,25 @@ void setup()
 
 void loop()
 {
-    rotate("left", 100, 90);
+    // Example using the new signed angle rotation API
+
+    // Rotate 50 degrees counterclockwise (positive angle = left)
+    rotate(50, 100);
     delay(1000);
+
+    // Rotate 50 degrees clockwise (negative angle = right)
+    rotate(-50, 100);
+    delay(1000);
+
+    // Rotate 100 degrees counterclockwise (positive angle = left)
+    rotate(-100, 100);
+    delay(1000);
+
+    // Rotate 100 degrees clockwise (negative angle = right)
+    rotate(100, 100);
+    delay(1000);
+
+    // Example of absolute rotation to 90 degrees (east)
+    // rotate(90, 100, true);
+    // delay(2000);
 }

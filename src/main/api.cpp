@@ -58,7 +58,8 @@ String handleMoveBackward(String params)
     return result.toJSON();
 }
 
-String handleTurnLeftRight(String params)
+// Legacy handler renamed and updated to use signed angles directly
+String handleRotateLegacy(String params)
 {
     // Parse turn-specific parameters
     String direction = "left"; // Default direction
@@ -68,15 +69,10 @@ String handleTurnLeftRight(String params)
 
     // TODO: Parse direction, speed, angleDeg, and absolute from params
 
-    // Validate parameters
-    if (!absolute && direction != "left" && direction != "right")
-    {
-        Result result;
-        result.success = false;
-        result.failure_reason = "Invalid direction. Must be 'left' or 'right' for relative rotation.";
-        return result.toJSON();
-    }
+    // Convert to the new signed angle format
+    float signedAngle = (direction == "left") ? abs(angleDeg) : -abs(angleDeg);
 
+    // Validate parameters
     if (speed <= 0 || speed > 255)
     {
         Result result;
@@ -85,7 +81,7 @@ String handleTurnLeftRight(String params)
         return result.toJSON();
     }
 
-    if (!absolute && angleDeg <= 0)
+    if (angleDeg <= 0 && !absolute)
     {
         Result result;
         result.success = false;
@@ -93,8 +89,8 @@ String handleTurnLeftRight(String params)
         return result.toJSON();
     }
 
-    // Use the unified rotate function with the absolute flag
-    Result result = rotate(direction, speed, angleDeg, absolute);
+    // Use the simplified rotate function
+    Result result = rotate(signedAngle, speed, absolute);
     return result.toJSON();
 }
 
@@ -103,7 +99,7 @@ String handleRotateToAngle(String params)
 {
     // Parse parameters
     int speed = 100;       // Default speed
-    float targetAngle = 0; // Target angle in degrees (0-359)
+    float targetAngle = 0; // Target angle in degrees (-180 to 180)
 
     // TODO: Parse speed and targetAngle from params
 
@@ -115,22 +111,35 @@ String handleRotateToAngle(String params)
         return result.toJSON();
     }
 
-    // Normalize the target angle
-    while (targetAngle >= 360.0f)
-        targetAngle -= 360.0f;
-    while (targetAngle < 0.0f)
-        targetAngle += 360.0f;
-
-    // Convert from compass angles (0-359) to our -180 to 180 system
-    if (targetAngle > 180.0f)
-        targetAngle -= 360.0f;
-
-    // Use the unified rotate function with absolute=true
-    Result result = rotate("", speed, targetAngle, true);
+    // Use the simplified rotate function with absolute=true
+    Result result = rotate(targetAngle, speed, true);
     return result.toJSON();
 }
 
-// New function to reset the rotation tracking
+// Primary rotation function using signed angles
+String handleRotate(String params)
+{
+    // Parse parameters
+    int speed = 100;       // Default speed
+    float angle = 0;       // Angle in degrees (positive = CCW, negative = CW)
+    bool absolute = false; // Default to relative rotation
+
+    // TODO: Parse speed, angle, and absolute from params
+
+    if (speed <= 0 || speed > 255)
+    {
+        Result result;
+        result.success = false;
+        result.failure_reason = "Invalid speed. Must be between 1 and 255.";
+        return result.toJSON();
+    }
+
+    // Use the simplified rotate function
+    Result result = rotate(angle, speed, absolute);
+    return result.toJSON();
+}
+
+// Reset the rotation tracking
 String handleResetRotationTracking(String params)
 {
     resetRotationTracking();

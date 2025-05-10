@@ -18,6 +18,7 @@ void setupMovement()
 
 void moveMotor(int motorIndex, int speed)
 {
+    // Apply motor-specific direction inversion
     if (motorIndex == FRONT_LEFT_MOTOR_INDEX)
     {
         speed = -speed;
@@ -37,10 +38,11 @@ void moveMotor(int motorIndex, int speed)
 
 void moveAllMotors(int speed)
 {
-    moveMotor(FRONT_LEFT_MOTOR_INDEX, speed);
     moveMotor(FRONT_RIGHT_MOTOR_INDEX, speed);
-    moveMotor(REAR_LEFT_MOTOR_INDEX, speed);
     moveMotor(REAR_RIGHT_MOTOR_INDEX, speed);
+    delay(5); // to balance the motors, do not remove
+    moveMotor(FRONT_LEFT_MOTOR_INDEX, speed);
+    moveMotor(REAR_LEFT_MOTOR_INDEX, speed);
 }
 
 void stopMotor(int motorIndex)

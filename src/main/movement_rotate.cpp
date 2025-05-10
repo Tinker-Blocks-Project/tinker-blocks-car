@@ -26,7 +26,7 @@ float getAccumulatedAngle()
     return accumulatedAngle;
 }
 
-// New function: Rotate to an absolute angle from north
+// Rotate to an absolute angle from north
 Result rotateToAbsolute(float targetAngleDeg, int speed)
 {
     Result result;
@@ -45,10 +45,6 @@ Result rotateToAbsolute(float targetAngleDeg, int speed)
     // Calculate the shortest path to the target angle
     float angleDifference = normalizeAngle(targetAngleDeg - currentAngle);
 
-    // Determine direction (positive = left/CCW, negative = right/CW)
-    String direction = angleDifference > 0 ? "left" : "right";
-    float angleToRotate = abs(angleDifference);
-
     // Debug info
     Serial.print("Current Angle: ");
     Serial.print(currentAngle);
@@ -58,41 +54,27 @@ Result rotateToAbsolute(float targetAngleDeg, int speed)
     Serial.println(angleDifference);
 
     // Use our PID controller to rotate the calculated amount
-    return rotateRelative(direction, speed, angleToRotate);
+    return rotateRelative(angleDifference, speed);
 }
 
 // Unified rotate function with absolute/relative flag
-Result rotate(const String &direction, int speed, float angleDeg, bool absolute)
+Result rotate(float angleDeg, int speed, bool absolute)
 {
-    // For absolute rotation, direction is ignored and angleDeg is the target angle
+    // For absolute rotation, angle is the target angle
     if (absolute)
     {
         return rotateToAbsolute(angleDeg, speed);
     }
 
     // For relative rotation, update our accumulated angle and then use absolute rotation
-    if (direction == "left")
-    {
-        accumulatedAngle = normalizeAngle(accumulatedAngle + angleDeg);
-    }
-    else if (direction == "right")
-    {
-        accumulatedAngle = normalizeAngle(accumulatedAngle - angleDeg);
-    }
-    else
-    {
-        Result result;
-        result.success = false;
-        result.failure_reason = "Direction must be 'left' or 'right'.";
-        return result;
-    }
+    accumulatedAngle = normalizeAngle(accumulatedAngle + angleDeg);
 
     // Use the accumulated angle to determine absolute target
     return rotateToAbsolute(accumulatedAngle, speed);
 }
 
-// Renamed the original function to indicate it's using relative angles directly
-Result rotateRelative(const String &direction, int speed, float angleDeg)
+// Rotate a relative amount (positive = left/CCW, negative = right/CW)
+Result rotateRelative(float angleDeg, int speed)
 {
     Result result;
 
@@ -104,19 +86,16 @@ Result rotateRelative(const String &direction, int speed, float angleDeg)
         return result;
     }
 
-    if (angleDeg <= 0)
+    if (angleDeg == 0)
     {
-        result.success = false;
-        result.failure_reason = "Angle must be positive.";
+        result.success = true;
+        result.success_result = "{\"angle_turned\":0,\"time_ms\":0,\"direction_changes\":0}";
         return result;
     }
 
-    if (direction != "left" && direction != "right")
-    {
-        result.success = false;
-        result.failure_reason = "Direction must be 'left' or 'right'.";
-        return result;
-    }
+    // Determine direction and angle magnitude
+    bool isLeftTurn = angleDeg > 0;
+    float absAngle = abs(angleDeg);
 
     // PID controller constants - more aggressive values
     const float Kp = 4.0f;                      // Increased proportional constant
@@ -125,13 +104,13 @@ Result rotateRelative(const String &direction, int speed, float angleDeg)
     const int MIN_SPEED = 70;                   // Increased minimum speed
     const int MAX_SPEED = min(255, speed + 20); // Allow slightly higher max speed
     const float TARGET_THRESHOLD = 1.0f;        // Keep the same threshold
+    const int MAX_DIRECTION_CHANGES = 5;        // Maximum number of direction changes allowed
 
     // Store the initial relative yaw at the start of the rotation
     float startRelativeYaw = getRelativeYaw(true);
 
     // Calculate target relative yaw
-    float targetAngle = direction == "left" ? angleDeg : -angleDeg;
-    float targetRelativeYaw = normalizeAngle(startRelativeYaw + targetAngle);
+    float targetRelativeYaw = normalizeAngle(startRelativeYaw + angleDeg);
 
     // PID variables
     float integral = 0.0f;
@@ -141,6 +120,10 @@ Result rotateRelative(const String &direction, int speed, float angleDeg)
     unsigned long startTime = prevTime;
     bool reachedTarget = false;
     int stableCycles = 0;
+
+    // Direction change tracking
+    int lastDirection = 0; // 0 = not set, 1 = positive, -1 = negative
+    int directionChanges = 0;
 
     // Debug every 100ms
     unsigned long lastDebugTime = 0;
@@ -170,7 +153,24 @@ Result rotateRelative(const String &direction, int speed, float angleDeg)
         float pidOutput = (Kp * error) + (Ki * integral) + (Kd * derivative);
 
         // Determine direction and speed from PID output
-        int rotationDirection = (pidOutput >= 0) ? 1 : -1;
+        int currentDirection = (pidOutput >= 0) ? 1 : -1;
+
+        // Track direction changes
+        if (lastDirection != 0 && currentDirection != lastDirection)
+        {
+            directionChanges++;
+            Serial.print("Direction change #");
+            Serial.print(directionChanges);
+            Serial.println(" detected");
+
+            // Stop if too many direction changes (oscillation)
+            if (directionChanges >= MAX_DIRECTION_CHANGES)
+            {
+                Serial.println("Too many direction changes - stopping rotation");
+                break;
+            }
+        }
+        lastDirection = currentDirection;
 
         // Convert PID output to motor speed with minimum threshold
         // Use a more aggressive scaling for speed calculation
@@ -184,11 +184,10 @@ Result rotateRelative(const String &direction, int speed, float angleDeg)
 
         motorSpeed = constrain(motorSpeed, MIN_SPEED, MAX_SPEED);
 
-        // Apply motor speeds
-        if ((rotationDirection > 0 && direction == "left") ||
-            (rotationDirection < 0 && direction == "right"))
+        // Apply motor speeds based on current correction direction
+        if (currentDirection > 0)
         {
-            // Turn left
+            // Turn left/CCW
             moveMotor(FRONT_LEFT_MOTOR_INDEX, -motorSpeed);
             moveMotor(REAR_LEFT_MOTOR_INDEX, -motorSpeed);
             moveMotor(FRONT_RIGHT_MOTOR_INDEX, motorSpeed);
@@ -196,7 +195,7 @@ Result rotateRelative(const String &direction, int speed, float angleDeg)
         }
         else
         {
-            // Turn right
+            // Turn right/CW
             moveMotor(FRONT_LEFT_MOTOR_INDEX, motorSpeed);
             moveMotor(REAR_LEFT_MOTOR_INDEX, motorSpeed);
             moveMotor(FRONT_RIGHT_MOTOR_INDEX, -motorSpeed);
@@ -215,7 +214,9 @@ Result rotateRelative(const String &direction, int speed, float angleDeg)
             Serial.print(" | PID: ");
             Serial.print(pidOutput);
             Serial.print(" | Speed: ");
-            Serial.println(motorSpeed);
+            Serial.print(motorSpeed);
+            Serial.print(" | Dir Changes: ");
+            Serial.println(directionChanges);
             lastDebugTime = currentTime;
         }
 
@@ -255,7 +256,8 @@ Result rotateRelative(const String &direction, int speed, float angleDeg)
     result.success = true;
     String successData = "{";
     successData += "\"angle_turned\":" + String(abs(actualAngleTurned), 2) + ",";
-    successData += "\"time_ms\":" + String(timeTaken);
+    successData += "\"time_ms\":" + String(timeTaken) + ",";
+    successData += "\"direction_changes\":" + String(directionChanges);
     successData += "}";
     result.success_result = successData;
 

@@ -36,10 +36,11 @@ void stopAllMotors();
 // Movement operations
 Result translate(const MovementParams &params, bool checkUltrasonic = true, bool enableYawCorrection = true);
 
-// Rotation operations
-Result rotate(const String &direction, int speed, float angleDeg, bool absolute = false);
-Result rotateRelative(const String &direction, int speed, float angleDeg);
-Result rotateToAbsolute(float targetAngleDeg, int speed);
+// Rotation operations - Using signed angles
+// Positive angles = counterclockwise/left, negative angles = clockwise/right
+Result rotate(float angleDeg, int speed, bool absolute = false); // Main rotation function
+Result rotateToAbsolute(float targetAngleDeg, int speed);        // Rotate to absolute angle from north
+Result rotateRelative(float angleDeg, int speed);                // Rotate by relative angle
 
 // Rotation tracking for relative rotations
 void resetRotationTracking(); // Reset the accumulated angle tracking

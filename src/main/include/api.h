@@ -14,8 +14,9 @@ MovementParams parseMovementParams(String params);
 // API endpoint handlers
 String handleMoveForward(String params);
 String handleMoveBackward(String params);
-String handleTurnLeftRight(String params);
-String handleRotateToAngle(String params);
+String handleRotate(String params);        // Primary rotation function (signed angles)
+String handleRotateToAngle(String params); // Absolute angle rotation
+String handleRotateLegacy(String params);  // Legacy handler (for compatibility)
 String handleGetCurrentAngle(String params = "");
 String handleGetAccumulatedAngle(String params = "");
 String handleResetRotationTracking(String params = "");
