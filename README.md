@@ -30,7 +30,7 @@ Any calculation which for example depends on the wheel size or other parameters 
 The code is organized into a class-based architecture to improve maintainability and separation of concerns:
 
 ```
-main/
+arduino/main/
 ├── main.ino                - Main Arduino sketch file with setup() and loop()
 ├── include/                - Header files directory
 │   ├── Motor.h             - Motor class declaration
