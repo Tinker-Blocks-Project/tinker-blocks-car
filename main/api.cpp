@@ -1,202 +1,401 @@
-#include "include/api.h"
-#include "include/movement.h"
-#include "include/pen.h"
-#include "include/sensor.h"
-#include "include/gyro.h"
+#include "include/API.h"
 
-void setupAPI()
+API::API(
+    MotionController &motion,
+    GyroSensor &gyro,
+    PenController &pen,
+    UltrasonicSensor &ultrasonic)
+    : motionController(motion),
+      gyroSensor(gyro),
+      penController(pen),
+      ultrasonicSensor(ultrasonic)
 {
-    // Implementation will go here - set up ESP32 WiFi, etc.
 }
 
-void handleAPIRequests()
+void API::setup()
 {
-    // Implementation will go here - process incoming API requests
+    // Nothing special to setup for the API itself currently
 }
 
-// Helper function to parse movement parameters
-MovementParams parseMovementParams(String params)
+void API::processCommands()
 {
-    // Implementation will go here - parse JSON parameters
-    // For now returning a default MovementParams
-    MovementParams movementParams;
-
-    // TODO: Parse speed, timeMs, distance from params
-
-    return movementParams;
-}
-
-String handleMoveForward(String params)
-{
-    // Parse parameters into a MovementParams object
-    MovementParams movementParams = parseMovementParams(params);
-
-    // Ensure speed is positive (forward direction)
-    if (movementParams.speed < 0)
+    if (Serial.available() > 0)
     {
-        movementParams.speed = -movementParams.speed;
+        String input = Serial.readStringUntil('\n');
+        input.trim();
+
+        // Parse command and payload
+        int separatorIndex = input.indexOf(':');
+        if (separatorIndex == -1)
+        {
+            Serial.println("{\"success\":false,\"reason\":\"Invalid command format\"}");
+            return;
+        }
+
+        String command = input.substring(0, separatorIndex);
+        String payload = input.substring(separatorIndex + 1);
+
+        Result result = executeCommand(command, payload);
+        Serial.println(result.toJSON());
     }
-
-    // Call the unified movement function with default safety parameters
-    Result result = translate(movementParams);
-    return result.toJSON();
 }
 
-String handleMoveBackward(String params)
-{
-    // Parse parameters into a MovementParams object
-    MovementParams movementParams = parseMovementParams(params);
-
-    // Ensure speed is negative (backward direction)
-    if (movementParams.speed > 0)
-    {
-        movementParams.speed = -movementParams.speed;
-    }
-
-    // Call the unified movement function with default safety parameters
-    Result result = translate(movementParams);
-    return result.toJSON();
-}
-
-// Legacy handler renamed and updated to use signed angles directly
-String handleRotateLegacy(String params)
-{
-    // Parse turn-specific parameters
-    String direction = "left"; // Default direction
-    int speed = 100;           // Default speed
-    float angleDeg = 0;        // Angle in degrees to turn
-    bool absolute = false;     // Flag to indicate absolute rotation
-
-    // TODO: Parse direction, speed, angleDeg, and absolute from params
-
-    // Convert to the new signed angle format
-    float signedAngle = (direction == "left") ? abs(angleDeg) : -abs(angleDeg);
-
-    // Validate parameters
-    if (speed <= 0 || speed > 255)
-    {
-        Result result;
-        result.success = false;
-        result.failure_reason = "Invalid speed. Must be between 1 and 255.";
-        return result.toJSON();
-    }
-
-    if (angleDeg <= 0 && !absolute)
-    {
-        Result result;
-        result.success = false;
-        result.failure_reason = "Invalid angle. Must be greater than 0 for relative rotation.";
-        return result.toJSON();
-    }
-
-    // Use the simplified rotate function
-    Result result = rotate(signedAngle, speed, absolute);
-    return result.toJSON();
-}
-
-// Handle rotation to absolute angle
-String handleRotateToAngle(String params)
-{
-    // Parse parameters
-    int speed = 100;       // Default speed
-    float targetAngle = 0; // Target angle in degrees (-180 to 180)
-
-    // TODO: Parse speed and targetAngle from params
-
-    if (speed <= 0 || speed > 255)
-    {
-        Result result;
-        result.success = false;
-        result.failure_reason = "Invalid speed. Must be between 1 and 255.";
-        return result.toJSON();
-    }
-
-    // Use the simplified rotate function with absolute=true
-    Result result = rotate(targetAngle, speed, true);
-    return result.toJSON();
-}
-
-// Primary rotation function using signed angles
-String handleRotate(String params)
-{
-    // Parse parameters
-    int speed = 100;       // Default speed
-    float angle = 0;       // Angle in degrees (positive = CCW, negative = CW)
-    bool absolute = false; // Default to relative rotation
-
-    // TODO: Parse speed, angle, and absolute from params
-
-    if (speed <= 0 || speed > 255)
-    {
-        Result result;
-        result.success = false;
-        result.failure_reason = "Invalid speed. Must be between 1 and 255.";
-        return result.toJSON();
-    }
-
-    // Use the simplified rotate function
-    Result result = rotate(angle, speed, absolute);
-    return result.toJSON();
-}
-
-// Reset the rotation tracking
-String handleResetRotationTracking(String params)
-{
-    resetRotationTracking();
-
-    Result result;
-    result.success = true;
-    result.success_result = "Rotation tracking reset";
-    return result.toJSON();
-}
-
-String handlePenUp()
-{
-    return liftPenUp().toJSON();
-}
-
-String handlePenDown()
-{
-    return putPenDown().toJSON();
-}
-
-String handleTogglePen()
-{
-    return togglePen().toJSON();
-}
-
-String handleGetPenState()
+Result API::executeCommand(const String &command, const String &payload)
 {
     Result result;
-    result.success = true;
-    result.success_result = "\"" + getPenState() + "\"";
-    return result.toJSON();
+    result.success = false;
+
+    if (command.equals("move"))
+    {
+        return moveCommand(payload);
+    }
+    else if (command.equals("rotate"))
+    {
+        return rotateCommand(payload);
+    }
+    else if (command.equals("pen"))
+    {
+        return penCommand(payload);
+    }
+    else if (command.equals("gyro"))
+    {
+        return gyroCommand(payload);
+    }
+    else if (command.equals("sensor"))
+    {
+        return sensorCommand(payload);
+    }
+    else
+    {
+        result.failure_reason = "Unknown command: " + command;
+    }
+
+    return result;
 }
 
-String handleGetDistance()
+Result API::moveCommand(const String &payload)
 {
     Result result;
-    result.success = true;
-    result.success_result = String(getDistanceToObstacle());
-    return result.toJSON();
+    result.success = false;
+
+    // Parse movement parameters
+    int speed = 0;
+    float distance = 0;
+    unsigned long timeMs = 0;
+    bool checkUltrasonic = true;
+    bool enableYawCorrection = true;
+
+    if (!parseJsonInt(payload, "speed", speed))
+    {
+        result.failure_reason = "Missing or invalid 'speed' parameter";
+        return result;
+    }
+
+    // These are optional parameters
+    parseJsonFloat(payload, "distance", distance);
+    parseJsonBool(payload, "checkUltrasonic", checkUltrasonic);
+    parseJsonBool(payload, "enableYawCorrection", enableYawCorrection);
+
+    // If time is provided and not distance, use time-based movement
+    if (parseJsonULong(payload, "timeMs", timeMs) && distance == 0)
+    {
+        return motionController.translate(MovementParams::fromSpeedAndTime(speed, timeMs), checkUltrasonic, enableYawCorrection);
+    }
+    // Otherwise use distance-based movement
+    else if (distance > 0)
+    {
+        return motionController.translate(MovementParams::fromSpeedAndDistance(speed, distance), checkUltrasonic, enableYawCorrection);
+    }
+    else
+    {
+        result.failure_reason = "Either 'distance' or 'timeMs' must be provided";
+        return result;
+    }
 }
 
-// Get the current absolute angle
-String handleGetCurrentAngle(String params)
+Result API::rotateCommand(const String &payload)
 {
     Result result;
-    result.success = true;
-    float currentAngle = getYaw(true);
-    result.success_result = String(currentAngle);
-    return result.toJSON();
+    result.success = false;
+
+    float angle = 0;
+    int speed = 100; // Default speed
+    bool absolute = false;
+
+    if (!parseJsonFloat(payload, "angle", angle))
+    {
+        result.failure_reason = "Missing or invalid 'angle' parameter";
+        return result;
+    }
+
+    // These are optional parameters
+    parseJsonInt(payload, "speed", speed);
+    parseJsonBool(payload, "absolute", absolute);
+
+    return motionController.rotate(angle, speed, absolute);
 }
 
-// Get the accumulated relative rotation angle
-String handleGetAccumulatedAngle(String params)
+Result API::penCommand(const String &payload)
 {
     Result result;
-    result.success = true;
-    float angle = getAccumulatedAngle();
-    result.success_result = String(angle);
-    return result.toJSON();
+    result.success = false;
+
+    String action;
+    if (!parseJsonString(payload, "action", action))
+    {
+        result.failure_reason = "Missing or invalid 'action' parameter";
+        return result;
+    }
+
+    if (action.equals("up"))
+    {
+        penController.liftUp();
+        result.success = true;
+        result.success_result = "Pen lifted up";
+    }
+    else if (action.equals("down"))
+    {
+        penController.putDown();
+        result.success = true;
+        result.success_result = "Pen put down";
+    }
+    else if (action.equals("position"))
+    {
+        int position;
+        if (!parseJsonInt(payload, "position", position))
+        {
+            result.failure_reason = "Missing or invalid 'position' parameter for pen position";
+            return result;
+        }
+
+        penController.setPosition(position);
+        result.success = true;
+        result.success_result = "Pen position set to " + String(position);
+    }
+    else
+    {
+        result.failure_reason = "Unknown pen action: " + action;
+    }
+
+    return result;
+}
+
+Result API::gyroCommand(const String &payload)
+{
+    Result result;
+    result.success = false;
+
+    String action;
+    if (!parseJsonString(payload, "action", action))
+    {
+        result.failure_reason = "Missing or invalid 'action' parameter";
+        return result;
+    }
+
+    if (action.equals("calibrate"))
+    {
+        gyroSensor.calibrate();
+        result.success = true;
+        result.success_result = "Gyro calibrated";
+    }
+    else if (action.equals("data"))
+    {
+        GyroData data = gyroSensor.getData();
+        result.success = true;
+        result.success_result = data.toJSON();
+    }
+    else if (action.equals("yaw"))
+    {
+        float yaw = gyroSensor.getYaw();
+        result.success = true;
+        result.success_result = String(yaw, 2);
+    }
+    else if (action.equals("reference"))
+    {
+        gyroSensor.setReferenceYaw();
+        result.success = true;
+        result.success_result = "Reference yaw set";
+    }
+    else
+    {
+        result.failure_reason = "Unknown gyro action: " + action;
+    }
+
+    return result;
+}
+
+Result API::sensorCommand(const String &payload)
+{
+    Result result;
+    result.success = false;
+
+    String action;
+    if (!parseJsonString(payload, "action", action))
+    {
+        result.failure_reason = "Missing or invalid 'action' parameter";
+        return result;
+    }
+
+    if (action.equals("distance"))
+    {
+        float distance = ultrasonicSensor.getDistance();
+        result.success = true;
+        result.success_result = String(distance, 2);
+    }
+    else if (action.equals("obstacle"))
+    {
+        float threshold = 10.0; // Default threshold
+        parseJsonFloat(payload, "threshold", threshold);
+
+        bool obstacle = ultrasonicSensor.isObstacleDetected(threshold);
+        result.success = true;
+        result.success_result = obstacle ? "true" : "false";
+    }
+    else
+    {
+        result.failure_reason = "Unknown sensor action: " + action;
+    }
+
+    return result;
+}
+
+// JSON parsing helper methods
+bool API::parseJsonInt(const String &json, const String &key, int &value)
+{
+    String keyStr = "\"" + key + "\":";
+    int keyIndex = json.indexOf(keyStr);
+    if (keyIndex == -1)
+    {
+        return false;
+    }
+
+    int valueStart = keyIndex + keyStr.length();
+    int valueEnd = json.indexOf(",", valueStart);
+    if (valueEnd == -1)
+    {
+        valueEnd = json.indexOf("}", valueStart);
+    }
+
+    if (valueEnd == -1)
+    {
+        return false;
+    }
+
+    String valueStr = json.substring(valueStart, valueEnd);
+    valueStr.trim();
+    value = valueStr.toInt();
+    return true;
+}
+
+bool API::parseJsonFloat(const String &json, const String &key, float &value)
+{
+    String keyStr = "\"" + key + "\":";
+    int keyIndex = json.indexOf(keyStr);
+    if (keyIndex == -1)
+    {
+        return false;
+    }
+
+    int valueStart = keyIndex + keyStr.length();
+    int valueEnd = json.indexOf(",", valueStart);
+    if (valueEnd == -1)
+    {
+        valueEnd = json.indexOf("}", valueStart);
+    }
+
+    if (valueEnd == -1)
+    {
+        return false;
+    }
+
+    String valueStr = json.substring(valueStart, valueEnd);
+    valueStr.trim();
+    value = valueStr.toFloat();
+    return true;
+}
+
+bool API::parseJsonString(const String &json, const String &key, String &value)
+{
+    String keyStr = "\"" + key + "\":\"";
+    int keyIndex = json.indexOf(keyStr);
+    if (keyIndex == -1)
+    {
+        return false;
+    }
+
+    int valueStart = keyIndex + keyStr.length();
+    int valueEnd = json.indexOf("\"", valueStart);
+
+    if (valueEnd == -1)
+    {
+        return false;
+    }
+
+    value = json.substring(valueStart, valueEnd);
+    return true;
+}
+
+bool API::parseJsonBool(const String &json, const String &key, bool &value)
+{
+    String keyStr = "\"" + key + "\":";
+    int keyIndex = json.indexOf(keyStr);
+    if (keyIndex == -1)
+    {
+        return false;
+    }
+
+    int valueStart = keyIndex + keyStr.length();
+    int valueEnd = json.indexOf(",", valueStart);
+    if (valueEnd == -1)
+    {
+        valueEnd = json.indexOf("}", valueStart);
+    }
+
+    if (valueEnd == -1)
+    {
+        return false;
+    }
+
+    String valueStr = json.substring(valueStart, valueEnd);
+    valueStr.trim();
+
+    if (valueStr.equals("true"))
+    {
+        value = true;
+        return true;
+    }
+    else if (valueStr.equals("false"))
+    {
+        value = false;
+        return true;
+    }
+
+    return false;
+}
+
+bool API::parseJsonULong(const String &json, const String &key, unsigned long &value)
+{
+    String keyStr = "\"" + key + "\":";
+    int keyIndex = json.indexOf(keyStr);
+    if (keyIndex == -1)
+    {
+        return false;
+    }
+
+    int valueStart = keyIndex + keyStr.length();
+    int valueEnd = json.indexOf(",", valueStart);
+    if (valueEnd == -1)
+    {
+        valueEnd = json.indexOf("}", valueStart);
+    }
+
+    if (valueEnd == -1)
+    {
+        return false;
+    }
+
+    String valueStr = json.substring(valueStart, valueEnd);
+    valueStr.trim();
+    value = valueStr.toInt(); // toInt() returns a long, which can be implicitly converted to unsigned long
+    return true;
 }

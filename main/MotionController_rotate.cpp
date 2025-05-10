@@ -1,11 +1,20 @@
-#include "include/movement.h"
-#include "include/sensor.h"
-#include "include/gyro.h"
+#include "include/MotionController.h"
+#include "include/GyroSensor.h"
 
-// Static variable to track accumulated relative rotation angle
-static float accumulatedAngle = 0.0f;
+// External reference to gyro sensor
+extern GyroSensor gyroSensor;
 
-float normalizeAngle(float angle)
+void MotionController::resetRotationTracking()
+{
+    accumulatedAngle = 0.0;
+}
+
+float MotionController::getAccumulatedAngle()
+{
+    return accumulatedAngle;
+}
+
+float MotionController::normalizeAngle(float angle)
 {
     while (angle > 180.0f)
         angle -= 360.0f;
@@ -14,20 +23,23 @@ float normalizeAngle(float angle)
     return angle;
 }
 
-// Reset the accumulated angle tracking
-void resetRotationTracking()
+Result MotionController::rotate(float angleDeg, int speed, bool absolute)
 {
-    accumulatedAngle = 0.0f;
+    if (absolute)
+    {
+        return rotateToAbsolute(angleDeg, speed);
+    }
+    else
+    {
+        // For relative rotation, update our accumulated angle and then use absolute rotation
+        accumulatedAngle = normalizeAngle(accumulatedAngle + angleDeg);
+
+        // Use the accumulated angle to determine absolute target
+        return rotateToAbsolute(accumulatedAngle, speed);
+    }
 }
 
-// Get the current accumulated angle from relative rotations
-float getAccumulatedAngle()
-{
-    return accumulatedAngle;
-}
-
-// Rotate to an absolute angle from north
-Result rotateToAbsolute(float targetAngleDeg, int speed)
+Result MotionController::rotateToAbsolute(float targetAngleDeg, int speed)
 {
     Result result;
 
@@ -39,8 +51,8 @@ Result rotateToAbsolute(float targetAngleDeg, int speed)
         return result;
     }
 
-    // Get current absolute yaw (from north)
-    float currentAngle = getYaw(true); // Get absolute angle in degrees
+    // Get current absolute yaw
+    float currentAngle = gyroSensor.getYaw();
 
     // Calculate the shortest path to the target angle
     float angleDifference = normalizeAngle(targetAngleDeg - currentAngle);
@@ -53,35 +65,18 @@ Result rotateToAbsolute(float targetAngleDeg, int speed)
     Serial.print(" | Difference: ");
     Serial.println(angleDifference);
 
-    // Use our PID controller to rotate the calculated amount
+    // Use rotateRelative to perform the actual rotation
     return rotateRelative(angleDifference, speed);
 }
 
-// Unified rotate function with absolute/relative flag
-Result rotate(float angleDeg, int speed, bool absolute)
-{
-    // For absolute rotation, angle is the target angle
-    if (absolute)
-    {
-        return rotateToAbsolute(angleDeg, speed);
-    }
-
-    // For relative rotation, update our accumulated angle and then use absolute rotation
-    accumulatedAngle = normalizeAngle(accumulatedAngle + angleDeg);
-
-    // Use the accumulated angle to determine absolute target
-    return rotateToAbsolute(accumulatedAngle, speed);
-}
-
-// Rotate a relative amount (positive = left/CCW, negative = right/CW)
-Result rotateRelative(float angleDeg, int speed)
+Result MotionController::rotateRelative(float angleDeg, int speed)
 {
     Result result;
+    result.success = false;
 
     // Validate parameters
     if (speed <= 0 || speed > 255)
     {
-        result.success = false;
         result.failure_reason = "Invalid speed. Must be between 1 and 255.";
         return result;
     }
@@ -107,7 +102,7 @@ Result rotateRelative(float angleDeg, int speed)
     const int MAX_DIRECTION_CHANGES = 5;        // Maximum number of direction changes allowed
 
     // Store the initial relative yaw at the start of the rotation
-    float startRelativeYaw = getRelativeYaw(true);
+    float startRelativeYaw = gyroSensor.getRelativeYaw();
 
     // Calculate target relative yaw
     float targetRelativeYaw = normalizeAngle(startRelativeYaw + angleDeg);
@@ -132,7 +127,7 @@ Result rotateRelative(float angleDeg, int speed)
     while (!reachedTarget)
     {
         // Get current position
-        currentRelativeYaw = getRelativeYaw(true);
+        currentRelativeYaw = gyroSensor.getRelativeYaw();
         unsigned long currentTime = millis();
         float deltaTime = (currentTime - prevTime) / 1000.0f; // Convert to seconds
         prevTime = currentTime;
@@ -188,18 +183,18 @@ Result rotateRelative(float angleDeg, int speed)
         if (currentDirection > 0)
         {
             // Turn left/CCW
-            moveMotor(FRONT_LEFT_MOTOR_INDEX, -motorSpeed);
-            moveMotor(REAR_LEFT_MOTOR_INDEX, -motorSpeed);
-            moveMotor(FRONT_RIGHT_MOTOR_INDEX, motorSpeed);
-            moveMotor(REAR_RIGHT_MOTOR_INDEX, motorSpeed);
+            frontLeftMotor.move(-motorSpeed);
+            rearLeftMotor.move(-motorSpeed);
+            frontRightMotor.move(motorSpeed);
+            rearRightMotor.move(motorSpeed);
         }
         else
         {
             // Turn right/CW
-            moveMotor(FRONT_LEFT_MOTOR_INDEX, motorSpeed);
-            moveMotor(REAR_LEFT_MOTOR_INDEX, motorSpeed);
-            moveMotor(FRONT_RIGHT_MOTOR_INDEX, -motorSpeed);
-            moveMotor(REAR_RIGHT_MOTOR_INDEX, -motorSpeed);
+            frontLeftMotor.move(motorSpeed);
+            rearLeftMotor.move(motorSpeed);
+            frontRightMotor.move(-motorSpeed);
+            rearRightMotor.move(-motorSpeed);
         }
 
         // Log debug info every 100ms
@@ -248,7 +243,7 @@ Result rotateRelative(float angleDeg, int speed)
     stopAllMotors();
 
     // Calculate actual angle turned
-    float finalRelativeYaw = getRelativeYaw(true);
+    float finalRelativeYaw = gyroSensor.getRelativeYaw();
     float actualAngleTurned = normalizeAngle(finalRelativeYaw - startRelativeYaw);
     unsigned long timeTaken = millis() - startTime;
 

@@ -1,6 +1,10 @@
-#include "include/movement.h"
-#include "include/sensor.h"
-#include "include/gyro.h"
+#include "include/MotionController.h"
+#include "include/UltrasonicSensor.h"
+#include "include/GyroSensor.h"
+
+// External references to sensors
+extern UltrasonicSensor ultrasonicSensor;
+extern GyroSensor gyroSensor;
 
 // Constants for yaw-based correction - reduced aggressiveness
 const float YAW_THRESHOLD = 0.5;        // degrees (increased from 0.2 to be less sensitive)
@@ -9,35 +13,37 @@ const int MIN_SPEED_DIFF = 40;          // Minimum speed difference (reduced fro
 const float CORRECTION_FACTOR = 2.0;    // Multiplier for yaw error (reduced from 5.0)
 const float CORRECTION_SMOOTHING = 0.7; // Smoothing factor for gradual correction (0-1, higher = smoother)
 
-Result translate(const MovementParams &params, bool checkUltrasonic, bool enableYawCorrection)
+Result MotionController::translate(const MovementParams &params, bool checkUltrasonic, bool enableYawCorrection)
 {
     Result result;
+    result.success = false;
 
-    // Validate parameters
     if (!params.isValid())
     {
-        result.success = false;
         result.failure_reason = "Invalid movement parameters";
         return result;
     }
 
+    int speed = params.speed;
+    unsigned long duration = params.timeMs;
+    float distance = params.distance;
+
     // Check direction and obstacle
-    bool isForward = params.speed > 0;
+    bool isForward = speed > 0;
 
     // If moving forward and ultrasonic checks are enabled, check for obstacles
     if (isForward && checkUltrasonic)
     {
-        float distance = getDistanceToObstacle();
-        if (distance > 0 && distance < params.distance)
+        float obstacleDistance = ultrasonicSensor.getDistance();
+        if (obstacleDistance > 0 && obstacleDistance < 15.0)
         {
-            result.success = false;
-            result.failure_reason = "Obstacle detected at " + String(distance) + " cm";
+            result.failure_reason = "Obstacle detected at " + String(obstacleDistance, 2) + "cm";
             return result;
         }
     }
 
     // Calculate base motor speeds
-    int baseSpeed = abs(params.speed);
+    int baseSpeed = abs(speed);
     int leftSpeed = baseSpeed;
     int rightSpeed = baseSpeed;
 
@@ -46,11 +52,11 @@ Result translate(const MovementParams &params, bool checkUltrasonic, bool enable
     int prevRightSpeed = rightSpeed;
 
     // Store the initial relative yaw at the start of the movement
-    float initialRelativeYaw = getRelativeYaw(true);
+    float initialRelativeYaw = gyroSensor.getRelativeYaw();
 
     // Start movement
     unsigned long startTime = millis();
-    unsigned long endTime = startTime + params.timeMs;
+    unsigned long endTime = startTime + duration;
 
     // Apply direction to base speed for moveAllMotors
     int directedSpeed = isForward ? baseSpeed : -baseSpeed;
@@ -66,13 +72,21 @@ Result translate(const MovementParams &params, bool checkUltrasonic, bool enable
         else
         {
             // Get current yaw relative to reference
-            float currentYaw = getRelativeYaw(true);
+            float currentYaw = gyroSensor.getRelativeYaw();
             // Calculate yaw error relative to the initial yaw at the start of this movement
             float yawError = currentYaw - initialRelativeYaw;
 
-            // Debug output
-            // Serial.print("Yaw Error: ");
-            // Serial.println(yawError);
+            // Check for obstacles during movement if required
+            if (checkUltrasonic && isForward)
+            {
+                float obstacleDistance = ultrasonicSensor.getDistance();
+                if (obstacleDistance < 10.0 && obstacleDistance > 0)
+                {
+                    stopAllMotors();
+                    result.failure_reason = "Obstacle detected during movement at " + String(obstacleDistance, 2) + "cm";
+                    return result;
+                }
+            }
 
             // Reset target speeds to base for this iteration
             int targetLeftSpeed = baseSpeed;
@@ -115,12 +129,6 @@ Result translate(const MovementParams &params, bool checkUltrasonic, bool enable
                 // Store current speeds for next iteration
                 prevLeftSpeed = leftSpeed;
                 prevRightSpeed = rightSpeed;
-
-                // Debug output
-                // Serial.print("Left: ");
-                // Serial.print(leftSpeed);
-                // Serial.print(" | Right: ");
-                // Serial.println(rightSpeed);
             }
             else
             {
@@ -141,10 +149,10 @@ Result translate(const MovementParams &params, bool checkUltrasonic, bool enable
             }
 
             // Move motors with corrected speeds
-            moveMotor(FRONT_LEFT_MOTOR_INDEX, leftSpeed);
-            moveMotor(REAR_LEFT_MOTOR_INDEX, leftSpeed);
-            moveMotor(FRONT_RIGHT_MOTOR_INDEX, rightSpeed);
-            moveMotor(REAR_RIGHT_MOTOR_INDEX, rightSpeed);
+            frontLeftMotor.move(leftSpeed);
+            rearLeftMotor.move(leftSpeed);
+            frontRightMotor.move(rightSpeed);
+            rearRightMotor.move(rightSpeed);
         }
 
         // Small delay for more responsive corrections
@@ -157,9 +165,9 @@ Result translate(const MovementParams &params, bool checkUltrasonic, bool enable
     // Prepare success result
     result.success = true;
     String successData = "{";
-    successData += "\"distance_traveled\":" + String(params.distance) + ",";
-    successData += "\"time_taken\":" + String(params.timeMs) + ",";
-    successData += "\"final_yaw\":" + String(getRelativeYaw(true), 2);
+    successData += "\"distance_traveled\":" + String(distance) + ",";
+    successData += "\"time_taken\":" + String(duration) + ",";
+    successData += "\"final_yaw\":" + String(gyroSensor.getRelativeYaw(), 2);
     successData += "}";
     result.success_result = successData;
 

@@ -1,62 +1,97 @@
-#include "include/globals.h"
-#include "include/movement.h"
-#include "include/pen.h"
-#include "include/sensor.h"
-#include "include/api.h"
-#include "include/gyro.h"
+#include "include/Motor.h"
+#include "include/MotionController.h"
+#include "include/GyroSensor.h"
+#include "include/PenController.h"
+#include "include/UltrasonicSensor.h"
+#include "include/API.h"
+
+// Pin definitions
+const int MOTOR_PINS[] = {22, 23, 30, 31, 32, 33, 24, 25};
+const int ENABLE_PINS[] = {6, 7, 8, 4};
+const int PEN_SERVO_PIN = 10;
+const int ULTRASONIC_TRIG_PIN = 11;
+const int ULTRASONIC_ECHO_PIN = 12;
+
+// Create motor instances
+Motor frontLeftMotor(MOTOR_PINS[6], MOTOR_PINS[7], ENABLE_PINS[3], true);
+Motor frontRightMotor(MOTOR_PINS[0], MOTOR_PINS[1], ENABLE_PINS[0]);
+Motor rearLeftMotor(MOTOR_PINS[2], MOTOR_PINS[3], ENABLE_PINS[1]);
+Motor rearRightMotor(MOTOR_PINS[4], MOTOR_PINS[5], ENABLE_PINS[2]);
+
+// Create controller instances
+MotionController motionController(frontLeftMotor, frontRightMotor, rearLeftMotor, rearRightMotor);
+GyroSensor gyroSensor;
+PenController penController(PEN_SERVO_PIN);
+UltrasonicSensor ultrasonicSensor(ULTRASONIC_TRIG_PIN, ULTRASONIC_ECHO_PIN);
+
+// Create API instance
+API api(motionController, gyroSensor, penController, ultrasonicSensor);
 
 void setup()
 {
     Serial.begin(115200);
     Serial.println("Tinker Blocks Car - Starting up...");
 
-    Serial.println("Setting up movement...");
-    setupMovement();
+    Serial.println("Setting up motors and motion controller...");
+    frontLeftMotor.setup();
+    frontRightMotor.setup();
+    rearLeftMotor.setup();
+    rearRightMotor.setup();
+    motionController.setup();
 
-    Serial.println("Setting up pen...");
-    setupPen();
-    liftPenUp();
+    Serial.println("Setting up pen controller...");
+    penController.setup();
+    penController.liftUp();
 
     Serial.println("Setting up ultrasonic sensor...");
-    setupUltrasonic();
+    ultrasonicSensor.setup();
 
-    Serial.println("Setting up gyro...");
-    setupGyro();
+    Serial.println("Setting up gyro sensor...");
+    if (!gyroSensor.setup())
+    {
+        Serial.println("Failed to initialize gyro sensor!");
+    }
 
     Serial.println("Calibrating gyro...");
-    calibrateGyro();
+    gyroSensor.calibrate();
 
     Serial.println("Establishing reference yaw...");
-    establishReferenceYaw(100, 200); // Move forward at speed 100 for 200ms
-    Serial.println("Reference yaw established: " + String(getReferenceYaw(), 2) + "°");
+    if (gyroSensor.establishReferenceYaw(100, 200))
+    {
+        Serial.println("Reference yaw established: " + String(gyroSensor.getReferenceYaw(), 2) + "°");
+    }
 
     Serial.println("Setting up API...");
-    setupAPI();
+    api.setup();
 
     Serial.println("Initialization complete!");
 }
 
 void loop()
 {
-    // Example using the new signed angle rotation API
+    // Process any incoming API commands
+    api.processCommands();
 
-    // Rotate 50 degrees counterclockwise (positive angle = left)
-    rotate(50, 100);
-    delay(1000);
+    // Alternatively, run a demo pattern:
+    // Draw a square
+    /*
+    for (int i = 0; i < 4; i++)
+    {
+        motionController.translate(MovementParams::fromSpeedAndDistance(100, 20), false, true);
+        delay(1000);
 
-    // Rotate 50 degrees clockwise (negative angle = right)
-    rotate(-50, 100);
-    delay(1000);
+        motionController.rotate(90, 100);
+        delay(1000);
+    }
 
-    // Rotate 100 degrees counterclockwise (positive angle = left)
-    rotate(-100, 100);
-    delay(1000);
+    // Draw another square in reverse
+    for (int i = 0; i < 4; i++)
+    {
+        motionController.translate(MovementParams::fromSpeedAndDistance(-100, 20), false, true);
+        delay(1000);
 
-    // Rotate 100 degrees clockwise (negative angle = right)
-    rotate(100, 100);
-    delay(1000);
-
-    // Example of absolute rotation to 90 degrees (east)
-    // rotate(90, 100, true);
-    // delay(2000);
+        motionController.rotate(-90, 100);
+        delay(1000);
+    }
+    */
 }

@@ -1,8 +1,7 @@
-#ifndef GLOBALS_H
-#define GLOBALS_H
+#ifndef RESULT_H
+#define RESULT_H
 
 #include <Arduino.h>
-#include <Servo.h>
 
 struct Result
 {
@@ -13,4 +12,4 @@ struct Result
     String toJSON();
 };
 
-#endif // GLOBALS_H
+#endif // RESULT_H

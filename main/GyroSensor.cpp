@@ -1,16 +1,13 @@
-#include "include/gyro.h"
-#include "include/movement.h"
+#include "include/GyroSensor.h"
+#include "include/MotionController.h"
 
-// Create MPU6050 object
-Adafruit_MPU6050 mpu;
+// External reference to motion controller
+extern MotionController motionController;
 
-// Store calibration values
-GyroData calibration;
-
-// Yaw tracking
-float currentYaw = 0.0;
-unsigned long lastYawUpdate = 0;
-float referenceYaw = 0.0; // Reference "north" yaw - this is the absolute 0 degrees reference
+GyroSensor::GyroSensor()
+    : currentYaw(0.0), lastYawUpdate(0), referenceYaw(0.0)
+{
+}
 
 // GyroData method implementations
 String GyroData::toJSON() const
@@ -37,7 +34,7 @@ void GyroData::applyCalibration(const GyroData &cal)
     gyroZ -= cal.gyroZ;
 }
 
-bool setupGyro()
+bool GyroSensor::setup()
 {
     if (!mpu.begin())
     {
@@ -56,12 +53,12 @@ bool setupGyro()
     return true;
 }
 
-void calibrateGyro()
+void GyroSensor::calibrate()
 {
     // Warm up period (reduced from 100 to 20 readings)
     for (int i = 0; i < 20; i++)
     {
-        getGyroData();
+        getData();
         delay(5); // Reduced from 10ms
     }
 
@@ -78,7 +75,7 @@ void calibrateGyro()
 
     for (int i = 0; i < numReadings; i++)
     {
-        GyroData data = getGyroData();
+        GyroData data = getData();
         sum.accelX += data.accelX;
         sum.accelY += data.accelY;
         sum.accelZ += data.accelZ;
@@ -105,7 +102,7 @@ void calibrateGyro()
     Serial.println("Gyro calibrated, reference north set to current orientation");
 }
 
-GyroData getGyroData()
+GyroData GyroSensor::getData()
 {
     sensors_event_t a, g, temp;
     mpu.getEvent(&a, &g, &temp);
@@ -126,9 +123,9 @@ GyroData getGyroData()
 }
 
 // Get absolute yaw angle (from calibrated "north" reference)
-float getYaw(bool degrees)
+float GyroSensor::getYaw(bool degrees)
 {
-    GyroData data = getGyroData();
+    GyroData data = getData();
     unsigned long now = millis();
     float dt = (now - lastYawUpdate) / 1000.0; // Convert to seconds
     lastYawUpdate = now;
@@ -157,7 +154,7 @@ float getYaw(bool degrees)
 }
 
 // Reset the integrated yaw value to zero
-void resetYaw()
+void GyroSensor::resetYaw()
 {
     currentYaw = 0.0;
     lastYawUpdate = millis();
@@ -165,7 +162,7 @@ void resetYaw()
 }
 
 // Set the current direction as the reference "north" (0 degrees)
-void setReferenceYaw(bool degrees)
+void GyroSensor::setReferenceYaw(bool degrees)
 {
     referenceYaw = getYaw(degrees);
     Serial.print("Reference yaw set to: ");
@@ -173,13 +170,13 @@ void setReferenceYaw(bool degrees)
 }
 
 // Get the previously stored reference yaw
-float getReferenceYaw()
+float GyroSensor::getReferenceYaw()
 {
     return referenceYaw;
 }
 
 // Get yaw relative to the stored reference yaw (useful for relative movements)
-float getRelativeYaw(bool degrees)
+float GyroSensor::getRelativeYaw(bool degrees)
 {
     float yaw = getYaw(degrees) - referenceYaw;
 
@@ -196,23 +193,21 @@ float getRelativeYaw(bool degrees)
 }
 
 // Automatically establish a reference direction by moving forward briefly
-bool establishReferenceYaw(int speed, int durationMs)
+bool GyroSensor::establishReferenceYaw(int speed, int durationMs)
 {
-    // Reset yaw before starting
+    // Reset yaw tracking
     resetYaw();
 
     // Move forward to establish direction
-    moveAllMotors(speed);
+    motionController.moveAllMotors(speed);
     delay(durationMs);
-    stopAllMotors();
+    motionController.stopAllMotors();
 
-    // Wait for car to stop
-    delay(500);
+    // Wait for the car to settle
+    delay(200);
 
-    // Set current yaw as reference
-    setReferenceYaw(true); // Now using degrees for consistency
-
-    Serial.println("Reference direction established by moving forward");
+    // Set the reference yaw to the current yaw
+    setReferenceYaw();
 
     return true;
 }
