@@ -27,7 +27,7 @@ void setup()
     calibrateGyro();
 
     Serial.println("Establishing reference yaw...");
-    establishReferenceYaw(100, 500); // Move forward at speed 100 for 500ms
+    establishReferenceYaw(100, 200); // Move forward at speed 100 for 200ms
     Serial.println("Reference yaw established: " + String(getReferenceYaw(), 2) + "°");
 
     Serial.println("Setting up API...");
@@ -38,15 +38,6 @@ void setup()
 
 void loop()
 {
-    // translate(MovementParams::fromSpeedAndDistance(90, 100), false, true);
-    // delay(1000);
-
-    // translate(MovementParams::fromSpeedAndDistance(90, 100), false, false);
-    // delay(1000);
-
-    rotate("left", 150, 90);
-    delay(1000);
-
-    translate(MovementParams::fromSpeedAndDistance(90, 30), false, true);
+    rotate("left", 100, 90);
     delay(1000);
 }

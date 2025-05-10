@@ -35,6 +35,14 @@ void stopAllMotors();
 
 // Movement operations
 Result translate(const MovementParams &params, bool checkUltrasonic = true, bool enableYawCorrection = true);
-Result rotate(const String &direction, int speed, float angleDeg);
+
+// Rotation operations
+Result rotate(const String &direction, int speed, float angleDeg, bool absolute = false);
+Result rotateRelative(const String &direction, int speed, float angleDeg);
+Result rotateToAbsolute(float targetAngleDeg, int speed);
+
+// Rotation tracking for relative rotations
+void resetRotationTracking(); // Reset the accumulated angle tracking
+float getAccumulatedAngle();  // Get current accumulated angle
 
 #endif // MOVEMENT_H

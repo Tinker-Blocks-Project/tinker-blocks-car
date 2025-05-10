@@ -2,6 +2,7 @@
 #include "include/movement.h"
 #include "include/pen.h"
 #include "include/sensor.h"
+#include "include/gyro.h"
 
 void setupAPI()
 {
@@ -63,15 +64,16 @@ String handleTurnLeftRight(String params)
     String direction = "left"; // Default direction
     int speed = 100;           // Default speed
     float angleDeg = 0;        // Angle in degrees to turn
+    bool absolute = false;     // Flag to indicate absolute rotation
 
-    // TODO: Parse direction, speed, and angleDeg from params
+    // TODO: Parse direction, speed, angleDeg, and absolute from params
 
-    // Validate turn parameters
-    if (direction != "left" && direction != "right")
+    // Validate parameters
+    if (!absolute && direction != "left" && direction != "right")
     {
         Result result;
         result.success = false;
-        result.failure_reason = "Invalid direction. Must be 'left' or 'right'.";
+        result.failure_reason = "Invalid direction. Must be 'left' or 'right' for relative rotation.";
         return result.toJSON();
     }
 
@@ -83,16 +85,59 @@ String handleTurnLeftRight(String params)
         return result.toJSON();
     }
 
-    if (angleDeg <= 0)
+    if (!absolute && angleDeg <= 0)
     {
         Result result;
         result.success = false;
-        result.failure_reason = "Invalid angle. Must be greater than 0.";
+        result.failure_reason = "Invalid angle. Must be greater than 0 for relative rotation.";
         return result.toJSON();
     }
 
-    // Call the rotate function with the new parameters
-    Result result = rotate(direction, speed, angleDeg);
+    // Use the unified rotate function with the absolute flag
+    Result result = rotate(direction, speed, angleDeg, absolute);
+    return result.toJSON();
+}
+
+// Handle rotation to absolute angle
+String handleRotateToAngle(String params)
+{
+    // Parse parameters
+    int speed = 100;       // Default speed
+    float targetAngle = 0; // Target angle in degrees (0-359)
+
+    // TODO: Parse speed and targetAngle from params
+
+    if (speed <= 0 || speed > 255)
+    {
+        Result result;
+        result.success = false;
+        result.failure_reason = "Invalid speed. Must be between 1 and 255.";
+        return result.toJSON();
+    }
+
+    // Normalize the target angle
+    while (targetAngle >= 360.0f)
+        targetAngle -= 360.0f;
+    while (targetAngle < 0.0f)
+        targetAngle += 360.0f;
+
+    // Convert from compass angles (0-359) to our -180 to 180 system
+    if (targetAngle > 180.0f)
+        targetAngle -= 360.0f;
+
+    // Use the unified rotate function with absolute=true
+    Result result = rotate("", speed, targetAngle, true);
+    return result.toJSON();
+}
+
+// New function to reset the rotation tracking
+String handleResetRotationTracking(String params)
+{
+    resetRotationTracking();
+
+    Result result;
+    result.success = true;
+    result.success_result = "Rotation tracking reset";
     return result.toJSON();
 }
 
@@ -124,5 +169,25 @@ String handleGetDistance()
     Result result;
     result.success = true;
     result.success_result = String(getDistanceToObstacle());
+    return result.toJSON();
+}
+
+// Get the current absolute angle
+String handleGetCurrentAngle(String params)
+{
+    Result result;
+    result.success = true;
+    float currentAngle = getYaw(true);
+    result.success_result = String(currentAngle);
+    return result.toJSON();
+}
+
+// Get the accumulated relative rotation angle
+String handleGetAccumulatedAngle(String params)
+{
+    Result result;
+    result.success = true;
+    float angle = getAccumulatedAngle();
+    result.success_result = String(angle);
     return result.toJSON();
 }

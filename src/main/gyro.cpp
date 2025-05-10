@@ -10,7 +10,7 @@ GyroData calibration;
 // Yaw tracking
 float currentYaw = 0.0;
 unsigned long lastYawUpdate = 0;
-float referenceYaw = 0.0; // Reference "north" yaw
+float referenceYaw = 0.0; // Reference "north" yaw - this is the absolute 0 degrees reference
 
 // GyroData method implementations
 String GyroData::toJSON() const
@@ -95,6 +95,14 @@ void calibrateGyro()
     calibration.gyroX = sum.gyroX / numReadings;
     calibration.gyroY = sum.gyroY / numReadings;
     calibration.gyroZ = sum.gyroZ / numReadings;
+
+    // Reset yaw tracking
+    resetYaw();
+
+    // Reset the reference north to the current orientation
+    referenceYaw = 0.0;
+
+    Serial.println("Gyro calibrated, reference north set to current orientation");
 }
 
 GyroData getGyroData()
@@ -117,6 +125,7 @@ GyroData getGyroData()
     return data;
 }
 
+// Get absolute yaw angle (from calibrated "north" reference)
 float getYaw(bool degrees)
 {
     GyroData data = getGyroData();
@@ -126,37 +135,67 @@ float getYaw(bool degrees)
 
     // Integrate gyro Z (yaw) rate to get angle in radians
     currentYaw += data.gyroZ * dt;
+
+    float yawValue = currentYaw;
+
+    // Convert to degrees if needed
     if (degrees)
     {
-        return currentYaw * (180.0 / PI);
+        yawValue = yawValue * (180.0 / PI);
     }
-    else
+
+    // Normalize the returned angle to be between -180 and 180 degrees
+    if (degrees)
     {
-        return currentYaw;
+        while (yawValue > 180.0f)
+            yawValue -= 360.0f;
+        while (yawValue < -180.0f)
+            yawValue += 360.0f;
     }
+
+    return yawValue;
 }
 
+// Reset the integrated yaw value to zero
 void resetYaw()
 {
     currentYaw = 0.0;
     lastYawUpdate = millis();
+    Serial.println("Yaw reset to 0");
 }
 
+// Set the current direction as the reference "north" (0 degrees)
 void setReferenceYaw(bool degrees)
 {
     referenceYaw = getYaw(degrees);
+    Serial.print("Reference yaw set to: ");
+    Serial.println(referenceYaw);
 }
 
+// Get the previously stored reference yaw
 float getReferenceYaw()
 {
     return referenceYaw;
 }
 
+// Get yaw relative to the stored reference yaw (useful for relative movements)
 float getRelativeYaw(bool degrees)
 {
-    return getYaw(degrees) - referenceYaw;
+    float yaw = getYaw(degrees) - referenceYaw;
+
+    // Normalize the result if working in degrees
+    if (degrees)
+    {
+        while (yaw > 180.0f)
+            yaw -= 360.0f;
+        while (yaw < -180.0f)
+            yaw += 360.0f;
+    }
+
+    return yaw;
 }
 
+// Automatically establish a reference direction by moving forward briefly
 bool establishReferenceYaw(int speed, int durationMs)
 {
     // Reset yaw before starting
@@ -171,7 +210,9 @@ bool establishReferenceYaw(int speed, int durationMs)
     delay(500);
 
     // Set current yaw as reference
-    setReferenceYaw(false);
+    setReferenceYaw(true); // Now using degrees for consistency
+
+    Serial.println("Reference direction established by moving forward");
 
     return true;
 }
