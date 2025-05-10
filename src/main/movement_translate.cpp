@@ -8,7 +8,7 @@ const int BASE_CORRECTION = 50;      // Base PWM adjustment (increased from 20)
 const int MIN_SPEED_DIFF = 80;       // Minimum speed difference (increased from 40)
 const float CORRECTION_FACTOR = 5.0; // Multiplier for yaw error (increased from 2.0)
 
-Result translate(const MovementParams &params)
+Result translate(const MovementParams &params, bool checkUltrasonic, bool enableYawCorrection)
 {
     Result result;
 
@@ -23,8 +23,8 @@ Result translate(const MovementParams &params)
     // Check direction and obstacle
     bool isForward = params.speed > 0;
 
-    // If moving forward, check for obstacles
-    if (isForward)
+    // If moving forward and ultrasonic checks are enabled, check for obstacles
+    if (isForward && checkUltrasonic)
     {
         float distance = getDistanceToObstacle();
         if (distance > 0 && distance < params.distance)
@@ -47,61 +47,79 @@ Result translate(const MovementParams &params)
     unsigned long startTime = millis();
     unsigned long endTime = startTime + params.timeMs;
 
+    // Apply direction to base speed for moveAllMotors
+    int directedSpeed = isForward ? baseSpeed : -baseSpeed;
+
     while (millis() < endTime)
     {
-        // Get current yaw relative to reference
-        float currentYaw = getRelativeYaw(true);
-        // Calculate yaw error relative to the initial yaw at the start of this movement
-        float yawError = currentYaw - initialRelativeYaw;
-
-        // Adjust motor speeds based on yaw error
-        if (abs(yawError) > YAW_THRESHOLD)
+        if (!enableYawCorrection)
         {
-            // Calculate correction based on error magnitude
-            int correction = BASE_CORRECTION + abs(yawError) * CORRECTION_FACTOR;
+            // When yaw correction is disabled, use moveAllMotors to ensure all motors run
+            // at the same speed without any correction
+            moveAllMotors(directedSpeed);
+        }
+        else
+        {
+            // Get current yaw relative to reference
+            float currentYaw = getRelativeYaw(true);
+            // Calculate yaw error relative to the initial yaw at the start of this movement
+            float yawError = currentYaw - initialRelativeYaw;
 
-            if (yawError > 0)
-            {                             // Drifting right
-                leftSpeed -= correction;  // Inverted: decrease left speed
-                rightSpeed += correction; // Inverted: increase right speed
-            }
-            else
-            {                             // Drifting left
-                leftSpeed += correction;  // Inverted: increase left speed
-                rightSpeed -= correction; // Inverted: decrease right speed
-            }
-
-            // Ensure minimum speed difference
-            int speedDiff = abs(leftSpeed - rightSpeed);
-            if (speedDiff < MIN_SPEED_DIFF)
+            // Adjust motor speeds based on yaw error
+            if (abs(yawError) > YAW_THRESHOLD)
             {
-                if (leftSpeed > rightSpeed)
-                {
-                    leftSpeed += MIN_SPEED_DIFF - speedDiff;
+                // Calculate correction based on error magnitude
+                int correction = BASE_CORRECTION + abs(yawError) * CORRECTION_FACTOR;
+
+                if (yawError > 0)
+                {                             // Drifting right
+                    leftSpeed -= correction;  // Inverted: decrease left speed
+                    rightSpeed += correction; // Inverted: increase right speed
                 }
                 else
-                {
-                    rightSpeed += MIN_SPEED_DIFF - speedDiff;
+                {                             // Drifting left
+                    leftSpeed += correction;  // Inverted: increase left speed
+                    rightSpeed -= correction; // Inverted: decrease right speed
                 }
+
+                // Ensure minimum speed difference
+                int speedDiff = abs(leftSpeed - rightSpeed);
+                if (speedDiff < MIN_SPEED_DIFF)
+                {
+                    if (leftSpeed > rightSpeed)
+                    {
+                        leftSpeed += MIN_SPEED_DIFF - speedDiff;
+                    }
+                    else
+                    {
+                        rightSpeed += MIN_SPEED_DIFF - speedDiff;
+                    }
+                }
+
+                // Ensure speeds stay within bounds
+                leftSpeed = constrain(leftSpeed, 0, 255);
+                rightSpeed = constrain(rightSpeed, 0, 255);
+            }
+            else
+            {
+                // Reset to base speeds if error is small
+                leftSpeed = baseSpeed;
+                rightSpeed = baseSpeed;
             }
 
-            // Ensure speeds stay within bounds
-            leftSpeed = constrain(leftSpeed, 0, 255);
-            rightSpeed = constrain(rightSpeed, 0, 255);
-        }
+            // Apply direction
+            if (!isForward)
+            {
+                leftSpeed = -leftSpeed;
+                rightSpeed = -rightSpeed;
+            }
 
-        // Apply direction
-        if (!isForward)
-        {
-            leftSpeed = -leftSpeed;
-            rightSpeed = -rightSpeed;
+            // Move motors with corrected speeds
+            moveMotor(FRONT_LEFT_MOTOR_INDEX, leftSpeed);
+            moveMotor(REAR_LEFT_MOTOR_INDEX, leftSpeed);
+            moveMotor(FRONT_RIGHT_MOTOR_INDEX, rightSpeed);
+            moveMotor(REAR_RIGHT_MOTOR_INDEX, rightSpeed);
         }
-
-        // Move motors with corrected speeds
-        moveMotor(FRONT_LEFT_MOTOR_INDEX, leftSpeed);
-        moveMotor(REAR_LEFT_MOTOR_INDEX, leftSpeed);
-        moveMotor(FRONT_RIGHT_MOTOR_INDEX, rightSpeed);
-        moveMotor(REAR_RIGHT_MOTOR_INDEX, rightSpeed);
 
         // Smaller delay for more responsive corrections
         delay(5); // Reduced from 10ms

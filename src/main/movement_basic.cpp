@@ -1,11 +1,7 @@
 #include "include/movement.h"
 
-const int MOTOR_PINS[] = {22, 23, 24, 25, 30, 31, 32, 33};
-const int ENABLE_PINS[] = {4, 6, 3, 8};
-const int SERVO_PINS[] = {2, 11};
-
-Servo frontLeftServo;
-Servo frontRightServo;
+const int MOTOR_PINS[] = {22, 23, 30, 31, 32, 33, 24, 25};
+const int ENABLE_PINS[] = {6, 7, 8, 4};
 
 void setupMovement()
 {
@@ -18,23 +14,12 @@ void setupMovement()
     {
         pinMode(ENABLE_PINS[i], OUTPUT);
     }
-
-    for (int i = 0; i < 2; i++)
-    {
-        pinMode(SERVO_PINS[i], OUTPUT);
-    }
-
-    frontLeftServo.attach(SERVO_PINS[FRONT_LEFT_SERVO_INDEX]);
-    frontRightServo.attach(SERVO_PINS[FRONT_RIGHT_SERVO_INDEX]);
-
-    steerServo(FRONT_LEFT_SERVO_INDEX, FRONT_LEFT_REF_ANGLE);
-    steerServo(FRONT_RIGHT_SERVO_INDEX, FRONT_RIGHT_REF_ANGLE);
 }
 
 void moveMotor(int motorIndex, int speed)
 {
-    if (motorIndex != 3)
-    { // motor 4 is the only one not reversed in the car
+    if (motorIndex == FRONT_LEFT_MOTOR_INDEX)
+    {
         speed = -speed;
     }
 
@@ -75,16 +60,4 @@ void stopAllMotors()
     stopMotor(FRONT_RIGHT_MOTOR_INDEX);
     stopMotor(REAR_LEFT_MOTOR_INDEX);
     stopMotor(REAR_RIGHT_MOTOR_INDEX);
-}
-
-void steerServo(int servoIndex, int angle, bool fromReference)
-{
-    if (servoIndex == FRONT_LEFT_SERVO_INDEX)
-    {
-        frontLeftServo.write(fromReference ? angle + FRONT_LEFT_REF_ANGLE : angle);
-    }
-    else if (servoIndex == FRONT_RIGHT_SERVO_INDEX)
-    {
-        frontRightServo.write(fromReference ? angle + FRONT_RIGHT_REF_ANGLE : angle);
-    }
 }

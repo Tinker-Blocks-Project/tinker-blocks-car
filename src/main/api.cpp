@@ -36,7 +36,7 @@ String handleMoveForward(String params)
         movementParams.speed = -movementParams.speed;
     }
 
-    // Call the unified movement function
+    // Call the unified movement function with default safety parameters
     Result result = translate(movementParams);
     return result.toJSON();
 }
@@ -52,21 +52,19 @@ String handleMoveBackward(String params)
         movementParams.speed = -movementParams.speed;
     }
 
-    // Call the unified movement function
+    // Call the unified movement function with default safety parameters
     Result result = translate(movementParams);
     return result.toJSON();
 }
 
 String handleTurnLeftRight(String params)
 {
-    // Parse movement parameters
-    MovementParams movementParams = parseMovementParams(params);
-
     // Parse turn-specific parameters
     String direction = "left"; // Default direction
-    float radius = 0;
+    int speed = 100;           // Default speed
+    float angleDeg = 0;        // Angle in degrees to turn
 
-    // TODO: Parse direction and radius from params
+    // TODO: Parse direction, speed, and angleDeg from params
 
     // Validate turn parameters
     if (direction != "left" && direction != "right")
@@ -77,17 +75,24 @@ String handleTurnLeftRight(String params)
         return result.toJSON();
     }
 
-    if (radius <= 0)
+    if (speed <= 0 || speed > 255)
     {
         Result result;
         result.success = false;
-        result.failure_reason = "Invalid radius. Must be greater than 0.";
+        result.failure_reason = "Invalid speed. Must be between 1 and 255.";
         return result.toJSON();
     }
 
-    // Call the unified turn function
-    // Result result = turnWithParams(direction, radius, movementParams);
-    Result result;
+    if (angleDeg <= 0)
+    {
+        Result result;
+        result.success = false;
+        result.failure_reason = "Invalid angle. Must be greater than 0.";
+        return result.toJSON();
+    }
+
+    // Call the rotate function with the new parameters
+    Result result = rotate(direction, speed, angleDeg);
     return result.toJSON();
 }
 

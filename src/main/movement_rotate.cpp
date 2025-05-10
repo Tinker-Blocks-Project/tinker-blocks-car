@@ -11,79 +11,62 @@ float normalizeAngle(float angle)
     return angle;
 }
 
-Result rotate(int speed, float radius, float angleDeg)
+Result rotate(const String &direction, int speed, float angleDeg)
 {
     Result result;
 
-    // Validate radius
-    if (radius <= 0)
+    // Validate parameters
+    if (speed <= 0 || speed > 255)
     {
         result.success = false;
-        result.failure_reason = "Invalid radius. Must be greater than 0.";
+        result.failure_reason = "Invalid speed. Must be between 1 and 255.";
         return result;
     }
 
-    if (speed == 0)
+    if (angleDeg <= 0)
     {
         result.success = false;
-        result.failure_reason = "Speed must be nonzero.";
+        result.failure_reason = "Angle must be positive.";
+        return result;
+    }
+
+    if (direction != "left" && direction != "right")
+    {
+        result.success = false;
+        result.failure_reason = "Direction must be 'left' or 'right'.";
         return result;
     }
 
     // Store the initial relative yaw at the start of the rotation
     float startRelativeYaw = getRelativeYaw(true);
 
-    // Calculate steering angles based on turning radius
-    const int MAX_STEERING_ANGLE = 30;                 // Maximum steering angle from center
-    float steeringFactor = min(1.0f, 100.0f / radius); // 100cm as reference radius
-    int steeringAngle = steeringFactor * MAX_STEERING_ANGLE;
-
-    // Determine direction based on sign of angleDeg
-    bool isLeft = angleDeg > 0;
-    int absSteeringAngle = abs(steeringAngle);
-
-    // Apply steering to servos based on direction
-    if (isLeft)
+    // For differential steering, we move the wheels on opposite sides in opposite directions
+    auto setDifferentialSteering = [&](int spd)
     {
-        steerServo(FRONT_LEFT_SERVO_INDEX, FRONT_LEFT_REF_ANGLE - absSteeringAngle);
-        steerServo(FRONT_RIGHT_SERVO_INDEX, FRONT_RIGHT_REF_ANGLE - absSteeringAngle);
-    }
-    else
-    {
-        steerServo(FRONT_LEFT_SERVO_INDEX, FRONT_LEFT_REF_ANGLE + absSteeringAngle);
-        steerServo(FRONT_RIGHT_SERVO_INDEX, FRONT_RIGHT_REF_ANGLE + absSteeringAngle);
-    }
-
-    // For sharper turns, adjust motor speeds
-    auto setMotorSpeeds = [&](int spd)
-    {
-        if (radius < 50)
+        if (direction == "left")
         {
-            if (isLeft)
-            {
-                moveMotor(FRONT_LEFT_MOTOR_INDEX, spd * 0.7);
-                moveMotor(REAR_LEFT_MOTOR_INDEX, spd * 0.7);
-                moveMotor(FRONT_RIGHT_MOTOR_INDEX, spd);
-                moveMotor(REAR_RIGHT_MOTOR_INDEX, spd);
-            }
-            else
-            {
-                moveMotor(FRONT_LEFT_MOTOR_INDEX, spd);
-                moveMotor(REAR_LEFT_MOTOR_INDEX, spd);
-                moveMotor(FRONT_RIGHT_MOTOR_INDEX, spd * 0.7);
-                moveMotor(REAR_RIGHT_MOTOR_INDEX, spd * 0.7);
-            }
+            // Left motors backward, right motors forward
+            moveMotor(FRONT_LEFT_MOTOR_INDEX, -spd);
+            moveMotor(REAR_LEFT_MOTOR_INDEX, -spd);
+            moveMotor(FRONT_RIGHT_MOTOR_INDEX, spd);
+            moveMotor(REAR_RIGHT_MOTOR_INDEX, spd);
         }
-        else
+        else // right
         {
-            moveAllMotors(spd);
+            // Left motors forward, right motors backward
+            moveMotor(FRONT_LEFT_MOTOR_INDEX, spd);
+            moveMotor(REAR_LEFT_MOTOR_INDEX, spd);
+            moveMotor(FRONT_RIGHT_MOTOR_INDEX, -spd);
+            moveMotor(REAR_RIGHT_MOTOR_INDEX, -spd);
         }
     };
 
     // Calculate target relative yaw
-    float targetRelativeYaw = normalizeAngle(startRelativeYaw + angleDeg);
+    float targetAngle = direction == "left" ? angleDeg : -angleDeg;
+    float targetRelativeYaw = normalizeAngle(startRelativeYaw + targetAngle);
 
     float lastYawError = normalizeAngle(targetRelativeYaw - startRelativeYaw);
+    unsigned long startTime = millis();
 
     while (true)
     {
@@ -91,21 +74,23 @@ Result rotate(int speed, float radius, float angleDeg)
         float yawError = normalizeAngle(targetRelativeYaw - currentRelativeYaw);
         float absError = abs(yawError);
 
-        // Gradual slowdown logic using a harder (quadratic) equation
-        // Speed scales quadratically from minSpeed to maxSpeed as absError goes from 0 to maxError
-        const int minSpeed = 40; // Minimum speed for control
-        const int maxSpeed = abs(speed);
+        // Gradual slowdown logic
+        const int minSpeed = 40; // Minimum speed to maintain rotation
+        const int maxSpeed = speed;
         const float maxError = 30.0f; // Angle at which we use maxSpeed
+
         float errorRatio = absError / maxError;
         if (errorRatio > 1.0f)
             errorRatio = 1.0f;
+
         // Quadratic scaling: drops off faster as error decreases
         int currentSpeed = minSpeed + (int)((maxSpeed - minSpeed) * (errorRatio * errorRatio));
         if (currentSpeed > maxSpeed)
             currentSpeed = maxSpeed;
         if (currentSpeed < minSpeed)
             currentSpeed = minSpeed;
-        setMotorSpeeds(currentSpeed);
+
+        setDifferentialSteering(currentSpeed);
 
         // Debug prints
         Serial.print("Current Relative Yaw: ");
@@ -116,28 +101,39 @@ Result rotate(int speed, float radius, float angleDeg)
         Serial.print(yawError);
         Serial.print(" | Speed: ");
         Serial.println(currentSpeed);
+
         // Stop if within threshold
         if (abs(yawError) <= 1.0f)
             break;
+
         // Stop if over-extended (sign of error changed)
         if ((lastYawError > 0 && yawError < 0) || (lastYawError < 0 && yawError > 0))
             break;
+
+        // Safety timeout - 5 seconds max for a turn
+        if (millis() - startTime > 5000)
+        {
+            Serial.println("Rotation timeout!");
+            break;
+        }
+
         lastYawError = yawError;
-        delay(0); // Increase frequency of control loop
+        delay(10); // Small delay to not overwhelm the processor
     }
 
     // Stop all motors
     stopAllMotors();
 
-    // Reset steering to straight position
-    steerServo(FRONT_LEFT_SERVO_INDEX, FRONT_LEFT_REF_ANGLE);
-    steerServo(FRONT_RIGHT_SERVO_INDEX, FRONT_RIGHT_REF_ANGLE);
+    // Calculate actual angle turned
+    float finalRelativeYaw = getRelativeYaw(true);
+    float actualAngleTurned = normalizeAngle(finalRelativeYaw - startRelativeYaw);
+    unsigned long timeTaken = millis() - startTime;
 
     // Prepare success result
     result.success = true;
     String successData = "{";
-    successData += "\"angle_turned\":" + String(angleDeg) + ",";
-    successData += "\"final_relative_yaw\":" + String(getRelativeYaw(true), 2);
+    successData += "\"angle_turned\":" + String(abs(actualAngleTurned), 2) + ",";
+    successData += "\"time_ms\":" + String(timeTaken);
     successData += "}";
     result.success_result = successData;
 

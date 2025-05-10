@@ -6,17 +6,17 @@ This repository contains the **Arduino Code** part of the project which controls
 
 A small custom-built wooden car, with the following features:
 
-- 12cm width x 24cm length
+- 10cm width x 20cm length
 - Wheels are powered by DC-motors, 4 wheels and 4 motors
 - 2 H-bridges, to control the motors (one per two motors)
-- The front two wheels are steered with two servos, mounted vertically above each wheel
+- Uses differential steering (tank-style turning) where left and right wheels rotate in opposite directions to turn
 - An ultrasonic sensor mounted on the front, for obstacle detection
 - Arduino Mega, to control the car
 - 3 Lithium-batteries, each is 3.7V for a total of 11.1V to power the motors
 - Voltage regulator to step down the voltage to 5V for the Arduino
 - Small servo to control the rotation of a Pen, which is used to draw as the car moves
 - ESP32, to allow wifi communication with the Arduino (e.g. via api endpoints that the Raspberry Pi will call)
-- MPU-6050 Gyroscope and Accelerometer, for precise movement tracking and orientation sensing
+- MPU-6050 Gyroscope and Accelerometer, for precise movement tracking and orientation sensing, especially for accurate turning angles
 
 ## The Arduino Code
 
@@ -112,14 +112,12 @@ Rules for using movement parameters:
 - **Turn left or right**
   - Required parameters:
     - direction: "left" or "right"
-    - radius: turning radius in centimeters
-  - Movement parameters: Any valid MovementParams combination
+    - angle: turning angle in degrees
+    - speed: rotation speed (0-255)
   - Failure:
-    - Ultrasonic sensor indicates an obstacle in front of the car
     - Parameters are invalid
   - Success:
     - Total angle turned
-    - Distance traveled
     - Time taken
 
 #### Pen Operations
