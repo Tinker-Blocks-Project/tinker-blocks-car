@@ -103,19 +103,39 @@ Result MotionController::translate(const MovementParams &params, bool checkUltra
                 // Apply non-linear scaling for more gentle corrections
                 correction = (int)(correction * CORRECTION_FACTOR * sqrt(abs(yawError)));
 
-                if (yawError > 0)
+                // Apply correction direction based on movement direction
+                if (isForward)
                 {
-                    // We're drifting right (positive yaw error)
-                    // To counter this, we need to steer left
-                    targetLeftSpeed += correction;  // Increase left speed
-                    targetRightSpeed -= correction; // Decrease right speed
+                    if (yawError > 0)
+                    {
+                        // We're drifting right (positive yaw error)
+                        // To counter this, we need to steer left
+                        targetLeftSpeed += correction;  // Increase left speed
+                        targetRightSpeed -= correction; // Decrease right speed
+                    }
+                    else
+                    {
+                        // We're drifting left (negative yaw error)
+                        // To counter this, we need to steer right
+                        targetLeftSpeed -= correction;  // Decrease left speed
+                        targetRightSpeed += correction; // Increase right speed
+                    }
                 }
                 else
                 {
-                    // We're drifting left (negative yaw error)
-                    // To counter this, we need to steer right
-                    targetLeftSpeed -= correction;  // Decrease left speed
-                    targetRightSpeed += correction; // Increase right speed
+                    // Reverse correction direction when going backward
+                    if (yawError > 0)
+                    {
+                        // When reversing, positive yaw error means we need to steer right
+                        targetLeftSpeed -= correction;  // Decrease left speed
+                        targetRightSpeed += correction; // Increase right speed
+                    }
+                    else
+                    {
+                        // When reversing, negative yaw error means we need to steer left
+                        targetLeftSpeed += correction;  // Increase left speed
+                        targetRightSpeed -= correction; // Decrease right speed
+                    }
                 }
 
                 // Ensure speeds stay within bounds
