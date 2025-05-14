@@ -29,8 +29,17 @@ API api(motionController, gyroSensor, penController, ultrasonicSensor);
 
 void setup()
 {
-    Serial.begin(115200);
+    Serial.begin(115200); // USB Serial Monitor
     Serial.println("Tinker Blocks Car - Starting up...");
+
+    // Initialize Serial1 for ESP32 communication with 1 second timeout
+    Serial1.begin(9600);
+    delay(1000); // Make sure Serial1 initializes properly
+    Serial.println("Serial1 initialized for ESP32 communication");
+
+    // Send a ready message to ESP32
+    Serial1.println("{\"status\":\"ready\"}");
+    Serial1.flush();
 
     Serial.println("Setting up motors and motion controller...");
     frontLeftMotor.setup();
@@ -71,27 +80,4 @@ void loop()
 {
     // Process any incoming API commands
     api.processCommands();
-
-    // Alternatively, run a demo pattern:
-    // Draw a square
-    /*
-    for (int i = 0; i < 4; i++)
-    {
-        motionController.translate(MovementParams::fromSpeedAndDistance(100, 20), false, true);
-        delay(1000);
-
-        motionController.rotate(90, 100);
-        delay(1000);
-    }
-
-    // Draw another square in reverse
-    for (int i = 0; i < 4; i++)
-    {
-        motionController.translate(MovementParams::fromSpeedAndDistance(-100, 20), false, true);
-        delay(1000);
-
-        motionController.rotate(-90, 100);
-        delay(1000);
-    }
-    */
 }
