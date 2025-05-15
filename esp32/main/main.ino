@@ -96,7 +96,11 @@ String sendCommandToArduino(const String &command, const String &payload)
                 // End of response
                 break;
             }
-            response += c;
+            // Only add printable characters to avoid control characters
+            if (c >= 32 && c <= 126)
+            {
+                response += c;
+            }
         }
         delay(10);
     }
@@ -107,6 +111,13 @@ String sendCommandToArduino(const String &command, const String &payload)
     {
         Serial.println("No response from Arduino (timeout)");
         return "{\"success\":false,\"reason\":\"Timeout or no response from Arduino\"}";
+    }
+
+    // Clean the response of any non-JSON characters at the beginning
+    int jsonStart = response.indexOf('{');
+    if (jsonStart > 0)
+    {
+        response = response.substring(jsonStart);
     }
 
     Serial.println("Arduino response: " + response);

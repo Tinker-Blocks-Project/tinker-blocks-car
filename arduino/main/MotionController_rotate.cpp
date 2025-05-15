@@ -84,7 +84,9 @@ Result MotionController::rotateRelative(float angleDeg, int speed)
     if (angleDeg == 0)
     {
         result.success = true;
-        result.success_result = "{\"angle_turned\":0,\"time_ms\":0,\"direction_changes\":0}";
+        // Create a valid JSON object without escaping
+        String zeroRotationJson = "{\"angle_turned\":0,\"time_ms\":0,\"direction_changes\":0}";
+        result.success_result = zeroRotationJson;
         return result;
     }
 
@@ -247,13 +249,16 @@ Result MotionController::rotateRelative(float angleDeg, int speed)
     float actualAngleTurned = normalizeAngle(finalRelativeYaw - startRelativeYaw);
     unsigned long timeTaken = millis() - startTime;
 
-    // Prepare success result
+    // Prepare success result with proper JSON formatting
     result.success = true;
+
+    // Create a JSON object directly without quotes
     String successData = "{";
     successData += "\"angle_turned\":" + String(abs(actualAngleTurned), 2) + ",";
     successData += "\"time_ms\":" + String(timeTaken) + ",";
     successData += "\"direction_changes\":" + String(directionChanges);
     successData += "}";
+
     result.success_result = successData;
 
     return result;

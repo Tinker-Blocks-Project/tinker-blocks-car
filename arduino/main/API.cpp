@@ -100,6 +100,10 @@ Result API::executeCommand(const String &command, const String &payload)
     Result result;
     result.success = false;
 
+    // Make sure all pending serial communications are sent before executing any command
+    Serial.flush();
+    Serial1.flush();
+
     if (command.equals("move"))
     {
         return moveCommand(payload);
@@ -133,9 +137,6 @@ Result API::moveCommand(const String &payload)
     Result result;
     result.success = false;
 
-    // Print incoming payload for debugging
-    Serial.println("Move command payload: " + payload);
-
     // Parse all potential movement parameters
     int speed = 0;
     float distance = 0;
@@ -148,41 +149,35 @@ Result API::moveCommand(const String &payload)
     bool hasDistance = parseJsonFloat(payload, "distance", distance);
     bool hasTimeMs = parseJsonULong(payload, "timeMs", timeMs);
 
-    // Debug output
-    Serial.println("Parsed values:");
-    Serial.println("- hasSpeed: " + String(hasSpeed) + ", speed: " + String(speed));
-    Serial.println("- hasDistance: " + String(hasDistance) + ", distance: " + String(distance));
-    Serial.println("- hasTimeMs: " + String(hasTimeMs) + ", timeMs: " + String(timeMs));
-
     // Parse optional parameters
     parseJsonBool(payload, "checkUltrasonic", checkUltrasonic);
     parseJsonBool(payload, "enableYawCorrection", enableYawCorrection);
 
     // We need at least 2 of the 3 parameters (speed, distance, timeMs)
     // Handle all valid combinations
+    Result moveResult;
 
     if (hasSpeed && hasDistance)
     {
-        // Case 1: Speed and Distance provided - use them to calculate time
-        Serial.println("Using speed and distance to move");
-        return motionController.translate(MovementParams::fromSpeedAndDistance(speed, distance), checkUltrasonic, enableYawCorrection);
+        // Case 1: Speed and Distance provided
+        moveResult = motionController.translate(MovementParams::fromSpeedAndDistance(speed, distance), checkUltrasonic, enableYawCorrection);
+        return moveResult;
     }
     else if (hasSpeed && hasTimeMs)
     {
         // Case 2: Speed and Time provided
-        Serial.println("Using speed and time to move");
-        return motionController.translate(MovementParams::fromSpeedAndTime(speed, timeMs), checkUltrasonic, enableYawCorrection);
+        moveResult = motionController.translate(MovementParams::fromSpeedAndTime(speed, timeMs), checkUltrasonic, enableYawCorrection);
+        return moveResult;
     }
     else if (hasDistance && hasTimeMs)
     {
-        // Case 3: Distance and Time provided - calculate required speed
-        Serial.println("Using distance and time to move");
-        return motionController.translate(MovementParams::fromDistanceAndTime(distance, timeMs), checkUltrasonic, enableYawCorrection);
+        // Case 3: Distance and Time provided
+        moveResult = motionController.translate(MovementParams::fromDistanceAndTime(distance, timeMs), checkUltrasonic, enableYawCorrection);
+        return moveResult;
     }
     else
     {
         // Invalid combination
-        Serial.println("Invalid parameter combination");
         result.failure_reason = "Invalid parameter combination. Need at least 2 of: 'speed', 'distance', 'timeMs'";
         return result;
     }
@@ -207,7 +202,9 @@ Result API::rotateCommand(const String &payload)
     parseJsonInt(payload, "speed", speed);
     parseJsonBool(payload, "absolute", absolute);
 
-    return motionController.rotate(angle, speed, absolute);
+    // Execute rotation
+    Result rotateResult = motionController.rotate(angle, speed, absolute);
+    return rotateResult;
 }
 
 Result API::penCommand(const String &payload)

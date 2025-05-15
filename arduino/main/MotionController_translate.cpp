@@ -182,13 +182,16 @@ Result MotionController::translate(const MovementParams &params, bool checkUltra
     // Stop all motors
     stopAllMotors();
 
-    // Prepare success result
+    // Prepare success result with proper JSON formatting
     result.success = true;
+
+    // Create a JSON object directly without quotes
     String successData = "{";
-    successData += "\"distance_traveled\":" + String(distance) + ",";
+    successData += "\"distance_traveled\":" + String(distance, 2) + ",";
     successData += "\"time_taken\":" + String(duration) + ",";
     successData += "\"final_yaw\":" + String(gyroSensor.getRelativeYaw(), 2);
     successData += "}";
+
     result.success_result = successData;
 
     return result;
