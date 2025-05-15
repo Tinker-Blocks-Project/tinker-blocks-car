@@ -2,8 +2,8 @@
 #include <WebServer.h>
 #include <ArduinoJson.h>
 
-const char *ssid = "Mazen";
-const char *password = "9001181261977";
+const char *ssid = "RN9S";
+const char *password = "531531531";
 
 // Use WebServer for easier API implementation
 WebServer server(80);
@@ -11,12 +11,13 @@ WebServer server(80);
 void setup()
 {
     Serial.begin(115200); // USB Serial Monitor
-    Serial1.begin(9600);  // RX=TX pins for Arduino communication (using default pins)
+    // Use Serial2 for Arduino comms (pins 16/17)
+    Serial2.begin(9600, SERIAL_8N1, 16, 17); // RX=16, TX=17 for Arduino communication
 
     pinMode(2, OUTPUT); // set the LED pin mode (using pin 2)
 
     Serial.println("ESP32 ready");
-    Serial1.println("ESP32 connected to Arduino"); // Send message to Arduino
+    Serial2.println("ESP32 connected to Arduino"); // Send message to Arduino
 
     delay(10);
 
@@ -40,9 +41,9 @@ void setup()
     Serial.println(WiFi.localIP());
 
     // Also send WiFi status to Arduino
-    Serial1.println("WiFi connected");
-    Serial1.print("IP: ");
-    Serial1.println(WiFi.localIP().toString());
+    Serial2.println("WiFi connected");
+    Serial2.print("IP: ");
+    Serial2.println(WiFi.localIP().toString());
 
     // Set up API endpoints
     setupAPIEndpoints();
@@ -61,14 +62,16 @@ String sendCommandToArduino(const String &command, const String &payload)
 {
     // Clean up the payload - remove whitespace and format it more consistently
     String cleanPayload = payload;
+    cleanPayload.replace("\n", "");
+    cleanPayload.replace("\r", "");
     cleanPayload.trim();
 
     String fullCommand = command + ":" + cleanPayload;
 
     // Send command to Arduino and flush to ensure it's fully sent
     Serial.println("Sending to Arduino: " + fullCommand);
-    Serial1.println(fullCommand);
-    Serial1.flush(); // Make sure all data is sent before continuing
+    Serial2.println(fullCommand);
+    Serial2.flush(); // Make sure all data is sent before continuing
 
     delay(100); // Short delay to let Arduino process
 
@@ -77,17 +80,17 @@ String sendCommandToArduino(const String &command, const String &payload)
     String response = "";
 
     // Clear any leftover data in the buffer
-    while (Serial1.available())
+    while (Serial2.available())
     {
-        Serial1.read();
+        Serial2.read();
     }
 
     // Wait for response
     while ((millis() - startTime) < 15000)
     {
-        if (Serial1.available())
+        if (Serial2.available())
         {
-            char c = Serial1.read();
+            char c = Serial2.read();
             if (c == '\n')
             {
                 // End of response

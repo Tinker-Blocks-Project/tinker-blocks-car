@@ -32,7 +32,7 @@ void setup()
     Serial.begin(115200); // USB Serial Monitor
     Serial.println("Tinker Blocks Car - Starting up...");
 
-    // Initialize Serial1 for ESP32 communication with 1 second timeout
+    // Use Serial1 for ESP32 comms (pins 18/19 on Mega)
     Serial1.begin(9600);
     delay(1000); // Make sure Serial1 initializes properly
     Serial.println("Serial1 initialized for ESP32 communication");

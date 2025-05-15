@@ -22,9 +22,10 @@ void API::processCommands()
     // Check for commands on Serial (USB)
     if (Serial.available() > 0)
     {
+        Serial.println("[API] Data available on Serial (USB). Reading...");
         String input = Serial.readStringUntil('\n');
         input.trim();
-        Serial.println("Received USB command: " + input);
+        Serial.println("[API] Received USB command: " + input);
 
         // Parse command and payload
         int separatorIndex = input.indexOf(':');
@@ -44,6 +45,7 @@ void API::processCommands()
     // Check for commands on Serial1 (ESP32)
     if (Serial1.available() > 0)
     {
+        Serial.println("[API] Data available on Serial1 (ESP32). Reading...");
         // Read command with a timeout
         String input = "";
         unsigned long startTime = millis();
@@ -65,8 +67,7 @@ void API::processCommands()
 
         input.trim();
 
-        // Debug print what we received
-        Serial.println("Received ESP32 command: " + input);
+        Serial.println("[API] Received ESP32 command: " + input);
 
         // Parse command and payload
         int separatorIndex = input.indexOf(':');
@@ -74,21 +75,21 @@ void API::processCommands()
         {
             String errorMsg = "{\"success\":false,\"reason\":\"Invalid command format\"}";
             Serial1.println(errorMsg);
-            Serial.println("Sending error: " + errorMsg);
+            Serial.println("[API] Sending error: " + errorMsg);
             return;
         }
 
         String command = input.substring(0, separatorIndex);
         String payload = input.substring(separatorIndex + 1);
 
-        Serial.println("Command: " + command);
-        Serial.println("Payload: " + payload);
+        Serial.println("[API] Command: " + command);
+        Serial.println("[API] Payload: " + payload);
 
         Result result = executeCommand(command, payload);
 
         // Send response back to ESP32
         String jsonResponse = result.toJSON();
-        Serial.println("Sending response: " + jsonResponse);
+        Serial.println("[API] Sending response: " + jsonResponse);
         Serial1.println(jsonResponse);
         Serial1.flush(); // Ensure all data is sent
     }
