@@ -15,19 +15,16 @@ MotionController::MotionController(
       frontRightMotor(frontRight),
       rearLeftMotor(rearLeft),
       rearRightMotor(rearRight),
-      accumulatedAngle(0.0)
-{
+      accumulatedAngle(0.0) {
 }
 
-void MotionController::setup()
-{
+void MotionController::setup() {
     // Motors should already be set up individually
     stopAllMotors();
     resetRotationTracking();
 }
 
-void MotionController::moveAllMotors(int speed)
-{
+void MotionController::moveAllMotors(int speed) {
     frontRightMotor.move(speed);
     rearRightMotor.move(speed);
     delay(5); // to balance the motors, do not remove
@@ -35,8 +32,7 @@ void MotionController::moveAllMotors(int speed)
     rearLeftMotor.move(speed);
 }
 
-void MotionController::stopAllMotors()
-{
+void MotionController::stopAllMotors() {
     frontLeftMotor.stop();
     frontRightMotor.stop();
     rearLeftMotor.stop();

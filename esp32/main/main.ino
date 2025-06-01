@@ -2,8 +2,8 @@
 #include <WebServer.h>
 #include <ArduinoJson.h>
 
-const char *ssid = "RN9S";
-const char *password = "531531531";
+const char *ssid = "ZTE";
+const char *password = "zte2375948*";
 
 // Use WebServer for easier API implementation
 WebServer server(80);

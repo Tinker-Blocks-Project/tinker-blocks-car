@@ -1,6 +1,6 @@
 #include "include/MovementParams.h"
 
-const float MAX_SPEED_CM_PER_MS = 0.072;
+const float MAX_SPEED_CM_PER_MS = 0.215;
 
 MovementParams MovementParams::fromSpeedAndDistance(int s, float d)
 {
