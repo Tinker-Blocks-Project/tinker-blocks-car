@@ -14,7 +14,7 @@ private:
     bool isDown;
 
 public:
-    PenController(int pin, int upPosition = 90, int downPosition = 0);
+    PenController(int pin, int upPosition = 0, int downPosition = 90);
 
     void setup();
     void liftUp();

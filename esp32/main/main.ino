@@ -68,22 +68,22 @@ String sendCommandToArduino(const String &command, const String &payload)
 
     String fullCommand = command + ":" + cleanPayload;
 
+    while(Serial2.available()) Serial2.read();
+
     // Send command to Arduino and flush to ensure it's fully sent
     Serial.println("Sending to Arduino: " + fullCommand);
     Serial2.println(fullCommand);
-    Serial2.flush(); // Make sure all data is sent before continuing
-
-    delay(100); // Short delay to let Arduino process
+    //delay(200); // Short delay to let Arduino process
 
     // Wait for response (timeout after 15 seconds)
     unsigned long startTime = millis();
     String response = "";
 
     // Clear any leftover data in the buffer
-    while (Serial2.available())
-    {
-        Serial2.read();
-    }
+    // while (Serial2.available())
+    // {
+    //     Serial.println("this charcater is dumb : " + Serial2.read());
+    // }
 
     // Wait for response
     while ((millis() - startTime) < 15000)
@@ -91,6 +91,7 @@ String sendCommandToArduino(const String &command, const String &payload)
         if (Serial2.available())
         {
             char c = Serial2.read();
+
             if (c == '\n')
             {
                 // End of response
@@ -102,6 +103,7 @@ String sendCommandToArduino(const String &command, const String &payload)
                 response += c;
             }
         }
+        // notice it
         delay(10);
     }
 
@@ -112,7 +114,7 @@ String sendCommandToArduino(const String &command, const String &payload)
         Serial.println("No response from Arduino (timeout)");
         return "{\"success\":false,\"reason\":\"Timeout or no response from Arduino\"}";
     }
-
+    
     // Clean the response of any non-JSON characters at the beginning
     int jsonStart = response.indexOf('{');
     if (jsonStart > 0)
@@ -164,6 +166,7 @@ void setupAPIEndpoints()
     server.on("/api/pen", HTTP_POST, handleAPIRequest);
     server.on("/api/gyro", HTTP_POST, handleAPIRequest);
     server.on("/api/sensor", HTTP_POST, handleAPIRequest);
+    server.on("/api/ir", HTTP_POST, handleAPIRequest);
 
     // Handle not found
     server.onNotFound([]()

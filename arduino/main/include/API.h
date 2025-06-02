@@ -5,6 +5,7 @@
 #include "Result.h"
 #include "MotionController.h"
 #include "GyroSensor.h"
+#include "IRSensor.h"
 #include "PenController.h"
 #include "UltrasonicSensor.h"
 
@@ -15,6 +16,7 @@ private:
     GyroSensor &gyroSensor;
     PenController &penController;
     UltrasonicSensor &ultrasonicSensor;
+    IRSensor &irSensor;
 
     // JSON parsing helpers
     bool parseJsonInt(const String &json, const String &key, int &value);
@@ -28,7 +30,9 @@ public:
         MotionController &motion,
         GyroSensor &gyro,
         PenController &pen,
-        UltrasonicSensor &ultrasonic);
+        UltrasonicSensor &ultrasonic,
+        IRSensor &ir_sensor
+        );
 
     void setup();
 
@@ -42,6 +46,7 @@ public:
     Result penCommand(const String &payload);
     Result gyroCommand(const String &payload);
     Result sensorCommand(const String &payload);
+    Result irCommand(const String &payload);
 };
 
 #endif // API_H
