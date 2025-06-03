@@ -7,10 +7,10 @@ extern UltrasonicSensor ultrasonicSensor;
 extern GyroSensor gyroSensor;
 
 // Constants for yaw-based correction - reduced aggressiveness
-const float YAW_THRESHOLD = 0.2; // degrees (increased from 0.2 to be less sensitive)
-const int BASE_CORRECTION = 30; // Base PWM adjustment (reduced from 50)
+const float YAW_THRESHOLD = 0.19; // degrees (increased from 0.2 to be less sensitive)
+const int BASE_CORRECTION = 32; // Base PWM adjustment (reduced from 50)
 const int MIN_SPEED_DIFF = 40; // Minimum speed difference (reduced from 80)
-const float CORRECTION_FACTOR = 2.0; // Multiplier for yaw error (reduced from 5.0)
+const float CORRECTION_FACTOR = 2.1; // Multiplier for yaw error (reduced from 5.0)
 const float CORRECTION_SMOOTHING = 0.7; // Smoothing factor for gradual correction (0-1, higher = smoother)
 
 Result MotionController::translate(const MovementParams &params, bool checkUltrasonic, bool enableYawCorrection) {

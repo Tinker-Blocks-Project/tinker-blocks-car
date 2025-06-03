@@ -9,12 +9,20 @@ void PenController::setup() {
 }
 
 void PenController::liftUp() {
+    penServo.attach(servoPin);
     penServo.write(penUpPos);
+    delay(200);
+    penServo.detach();
+    delay(1200);
     isDown = false;
 }
 
 void PenController::putDown() {
+  penServo.attach(servoPin);
     penServo.write(penDownPos);
+    delay(200);
+    penServo.detach();
+    delay(1200);
     isDown = true;
 }
 
