@@ -5,14 +5,16 @@ API::API(
     GyroSensor &gyro,
     PenController &pen,
     UltrasonicSensor &ultrasonic,
-    IRSensor &ir_sensor
+    IRSensor &ir_sensor,
+    Buzzer &buzzer
 )
 
     : motionController(motion),
       gyroSensor(gyro),
       penController(pen),
       ultrasonicSensor(ultrasonic),
-      irSensor(ir_sensor) {
+      irSensor(ir_sensor),
+      buzzer(buzzer) {
 }
 
 void API::setup() {
@@ -112,6 +114,8 @@ Result API::executeCommand(const String &command, const String &payload) {
         return sensorCommand(payload);
     } else if (command.equals("ir")) {
         return irCommand(payload);
+    } else if (command.equals("buzzer")) {
+        return buzzerCommand(payload);
     } else {
         result.failure_reason = "Unknown command: " + command;
     }
@@ -305,6 +309,33 @@ Result API::irCommand(const String &payload) {
     return result;
 }
 
+Result API::buzzerCommand(const String &payload) {
+    Result result;
+    result.success = false;
+
+    String action;
+    if (!parseJsonString(payload, "action", action)) {
+        result.failure_reason = "Missing or invalid 'action' parameter";
+        return result;
+    }
+
+    if (action.equals("on")) {
+        buzzer.BuzzerRun();
+        result.success = true;
+        result.success_result = "running";
+
+    }
+    else if(action.equals("off")) {
+        buzzer.BuzzerStop();
+        result.success = true;
+        result.success_result = "stopped";
+    }
+    else {
+        result.failure_reason = "Unknown sensor action: " + action;
+    }
+
+    return result;
+}
 
 // JSON parsing helper methods
 bool API::parseJsonInt(const String &json, const String &key, int &value) {

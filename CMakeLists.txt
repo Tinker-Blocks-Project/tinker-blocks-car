@@ -31,4 +31,6 @@ add_executable(tinker_blocks_car
     esp32/main/main.ino
         arduino/main/include/IRSensor.h
         arduino/main/IRSensor.cpp
+        arduino/main/include/Buzzer.h
+        arduino/main/Buzzer.cpp
 )

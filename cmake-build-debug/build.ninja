@@ -126,6 +126,13 @@ build CMakeFiles/tinker_blocks_car.dir/arduino/main/IRSensor.cpp.obj: CXX_COMPIL
   OBJECT_DIR = CMakeFiles\tinker_blocks_car.dir
   OBJECT_FILE_DIR = CMakeFiles\tinker_blocks_car.dir\arduino\main
 
+build CMakeFiles/tinker_blocks_car.dir/arduino/main/Buzzer.cpp.obj: CXX_COMPILER__tinker_blocks_car_unscanned_Debug C$:/Users/USER-Q/Desktop/tinker-blocks-car/arduino/main/Buzzer.cpp || cmake_object_order_depends_target_tinker_blocks_car
+  DEP_FILE = CMakeFiles\tinker_blocks_car.dir\arduino\main\Buzzer.cpp.obj.d
+  FLAGS = -g -std=gnu++14 -fdiagnostics-color=always
+  INCLUDES = -IC:/Users/USER-Q/Desktop/tinker-blocks-car/arduino/main -IC:/Users/USER-Q/Desktop/tinker-blocks-car/arduino/main/include -IC:/Users/USER-Q/Desktop/tinker-blocks-car/esp32 -IC:/Users/USER-Q/Desktop/tinker-blocks-car/esp32/main
+  OBJECT_DIR = CMakeFiles\tinker_blocks_car.dir
+  OBJECT_FILE_DIR = CMakeFiles\tinker_blocks_car.dir\arduino\main
+
 
 # =============================================================================
 # Link build statements for EXECUTABLE target tinker_blocks_car
@@ -134,7 +141,7 @@ build CMakeFiles/tinker_blocks_car.dir/arduino/main/IRSensor.cpp.obj: CXX_COMPIL
 #############################################
 # Link the executable tinker_blocks_car.exe
 
-build tinker_blocks_car.exe: CXX_EXECUTABLE_LINKER__tinker_blocks_car_Debug CMakeFiles/tinker_blocks_car.dir/arduino/main/API.cpp.obj CMakeFiles/tinker_blocks_car.dir/arduino/main/GyroSensor.cpp.obj CMakeFiles/tinker_blocks_car.dir/arduino/main/MotionController.cpp.obj CMakeFiles/tinker_blocks_car.dir/arduino/main/MotionController_rotate.cpp.obj CMakeFiles/tinker_blocks_car.dir/arduino/main/MotionController_translate.cpp.obj CMakeFiles/tinker_blocks_car.dir/arduino/main/Motor.cpp.obj CMakeFiles/tinker_blocks_car.dir/arduino/main/MovementParams.cpp.obj CMakeFiles/tinker_blocks_car.dir/arduino/main/PenController.cpp.obj CMakeFiles/tinker_blocks_car.dir/arduino/main/Result.cpp.obj CMakeFiles/tinker_blocks_car.dir/arduino/main/UltrasonicSensor.cpp.obj CMakeFiles/tinker_blocks_car.dir/arduino/main/IRSensor.cpp.obj
+build tinker_blocks_car.exe: CXX_EXECUTABLE_LINKER__tinker_blocks_car_Debug CMakeFiles/tinker_blocks_car.dir/arduino/main/API.cpp.obj CMakeFiles/tinker_blocks_car.dir/arduino/main/GyroSensor.cpp.obj CMakeFiles/tinker_blocks_car.dir/arduino/main/MotionController.cpp.obj CMakeFiles/tinker_blocks_car.dir/arduino/main/MotionController_rotate.cpp.obj CMakeFiles/tinker_blocks_car.dir/arduino/main/MotionController_translate.cpp.obj CMakeFiles/tinker_blocks_car.dir/arduino/main/Motor.cpp.obj CMakeFiles/tinker_blocks_car.dir/arduino/main/MovementParams.cpp.obj CMakeFiles/tinker_blocks_car.dir/arduino/main/PenController.cpp.obj CMakeFiles/tinker_blocks_car.dir/arduino/main/Result.cpp.obj CMakeFiles/tinker_blocks_car.dir/arduino/main/UltrasonicSensor.cpp.obj CMakeFiles/tinker_blocks_car.dir/arduino/main/IRSensor.cpp.obj CMakeFiles/tinker_blocks_car.dir/arduino/main/Buzzer.cpp.obj
   FLAGS = -g
   LINK_LIBRARIES = -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32
   OBJECT_DIR = CMakeFiles\tinker_blocks_car.dir

@@ -1,3 +1,5 @@
+#include <esp_wifi.h>
+#include <esp_wpa2.h> // Needed for WPA2-Enterprise
 #include <WiFi.h>
 #include <WebServer.h>
 #include <ArduinoJson.h>
@@ -7,6 +9,45 @@ const char *password = "zte2375948*";
 
 // Use WebServer for easier API implementation
 WebServer server(80);
+
+
+const char *identity = "12113636";     // university username
+const char *username = "12113636";     // often same as identity
+
+/*
+void connectToWPA2Enterprise() {
+    WiFi.disconnect(true); // clean start
+    delay(1000);
+
+    WiFi.mode(WIFI_STA);
+    WiFi.begin(ssid); // Start WiFi with SSID only
+
+    esp_wifi_sta_wpa2_ent_enable(); // Enable WPA2-Enterprise
+
+    esp_wifi_sta_wpa2_ent_set_identity((uint8_t *)identity, strlen(identity));
+    esp_wifi_sta_wpa2_ent_set_username((uint8_t *)username, strlen(username));
+    esp_wifi_sta_wpa2_ent_set_password((uint8_t *)password, strlen(password));
+
+    esp_wifi_connect();
+
+    Serial.print("Connecting to WPA2-Enterprise network");
+
+    int retries = 0;
+    while (WiFi.status() != WL_CONNECTED && retries < 30) {
+        delay(500);
+        Serial.print(".");
+        retries++;
+    }
+
+    if (WiFi.status() == WL_CONNECTED) {
+        Serial.println("\nWiFi connected");
+        Serial.println("IP address: ");
+        Serial.println(WiFi.localIP());
+    } else {
+        Serial.println("\nFailed to connect to WPA2-Enterprise WiFi.");
+    }
+}*/
+
 
 void setup()
 {
@@ -44,6 +85,8 @@ void setup()
     Serial2.println("WiFi connected");
     Serial2.print("IP: ");
     Serial2.println(WiFi.localIP().toString());
+
+
 
     // Set up API endpoints
     setupAPIEndpoints();
@@ -167,7 +210,8 @@ void setupAPIEndpoints()
     server.on("/api/gyro", HTTP_POST, handleAPIRequest);
     server.on("/api/sensor", HTTP_POST, handleAPIRequest);
     server.on("/api/ir", HTTP_POST, handleAPIRequest);
-
+    server.on("/api/buzzer", HTTP_POST, handleAPIRequest);
+    
     // Handle not found
     server.onNotFound([]()
                       { server.send(404, "application/json", "{\"success\":false,\"reason\":\"Endpoint not found\"}"); });

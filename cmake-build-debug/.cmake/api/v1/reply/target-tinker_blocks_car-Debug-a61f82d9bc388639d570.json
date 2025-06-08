@@ -106,7 +106,8 @@
 				16,
 				17,
 				18,
-				21
+				21,
+				23
 			]
 		}
 	],
@@ -169,7 +170,8 @@
 				16,
 				17,
 				18,
-				21
+				21,
+				23
 			]
 		},
 		{
@@ -306,8 +308,14 @@
 		},
 		{
 			"backtrace" : 1,
-			"path" : "arduino/main/IRSensor.h",
+			"path" : "arduino/main/include/Buzzer.h",
 			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "arduino/main/Buzzer.cpp",
+			"sourceGroupIndex" : 1
 		}
 	],
 	"type" : "EXECUTABLE"

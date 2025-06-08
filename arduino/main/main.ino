@@ -1,3 +1,4 @@
+#include "include/Buzzer.h"
 #include "include/IRSensor.h"
 #include "include/Motor.h"
 #include "include/MotionController.h"
@@ -13,7 +14,7 @@ const int PEN_SERVO_PIN = 10;
 const int ULTRASONIC_TRIG_PIN = 40;
 const int ULTRASONIC_ECHO_PIN = 41;
 const int IR_SENSOR_PIN = 48;
-
+const int BUZZER_PIN = 49;
 
 // Create motor instances
 Motor frontLeftMotor(MOTOR_PINS[6], MOTOR_PINS[7], ENABLE_PINS[3], true);
@@ -27,9 +28,11 @@ GyroSensor gyroSensor;
 PenController penController(PEN_SERVO_PIN);
 UltrasonicSensor ultrasonicSensor(ULTRASONIC_TRIG_PIN, ULTRASONIC_ECHO_PIN);
 IRSensor irSensor(IR_SENSOR_PIN);
+Buzzer buzzer(BUZZER_PIN);
+
 
 // Create API instance
-API api(motionController, gyroSensor, penController, ultrasonicSensor,irSensor);
+API api(motionController, gyroSensor, penController, ultrasonicSensor,irSensor,buzzer);
 
 void setup()
 {
@@ -54,12 +57,16 @@ void setup()
 
     Serial.println("Setting up pen controller...");
     penController.setup();
+    penController.liftUp();
 
     Serial.println("Setting up ultrasonic sensor...");
     ultrasonicSensor.setup();
 
     Serial.println("Setting up ir sensor...");
     irSensor.setup();
+
+    Serial.println("Setting up buzzer ...");
+    buzzer.setup();
 
     Serial.println("Setting up gyro sensor...");
     if (!gyroSensor.setup())

@@ -8,6 +8,7 @@
 #include "IRSensor.h"
 #include "PenController.h"
 #include "UltrasonicSensor.h"
+#include "Buzzer.h"
 
 class API
 {
@@ -17,6 +18,7 @@ private:
     PenController &penController;
     UltrasonicSensor &ultrasonicSensor;
     IRSensor &irSensor;
+    Buzzer &buzzer;
 
     // JSON parsing helpers
     bool parseJsonInt(const String &json, const String &key, int &value);
@@ -31,7 +33,8 @@ public:
         GyroSensor &gyro,
         PenController &pen,
         UltrasonicSensor &ultrasonic,
-        IRSensor &ir_sensor
+        IRSensor &ir_sensor,
+        Buzzer &buzzer
         );
 
     void setup();
@@ -47,6 +50,7 @@ public:
     Result gyroCommand(const String &payload);
     Result sensorCommand(const String &payload);
     Result irCommand(const String &payload);
+    Result buzzerCommand(const String &payload);
 };
 
 #endif // API_H
