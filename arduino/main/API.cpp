@@ -427,15 +427,31 @@ bool API::parseJsonFloat(const String &json, const String &key, float &value) {
 }
 
 bool API::parseJsonString(const String &json, const String &key, String &value) {
-    String keyStr = "\"" + key + "\":\"";
-    int keyIndex = json.indexOf(keyStr);
+    String keyPattern = "\"" + key + "\"";
+    int keyIndex = json.indexOf(keyPattern);
     if (keyIndex == -1) {
         return false;
     }
 
-    int valueStart = keyIndex + keyStr.length();
-    int valueEnd = json.indexOf("\"", valueStart);
+    // Find the colon after the key
+    int colonIndex = json.indexOf(":", keyIndex + keyPattern.length());
+    if (colonIndex == -1) {
+        return false;
+    }
 
+    // Skip whitespace after colon
+    int valueStart = colonIndex + 1;
+    while (valueStart < json.length() && (json.charAt(valueStart) == ' ' || json.charAt(valueStart) == '\t')) {
+        valueStart++;
+    }
+
+    // Expect opening quote
+    if (valueStart >= json.length() || json.charAt(valueStart) != '"') {
+        return false;
+    }
+
+    valueStart++; // Skip the opening quote
+    int valueEnd = json.indexOf("\"", valueStart);
     if (valueEnd == -1) {
         return false;
     }
