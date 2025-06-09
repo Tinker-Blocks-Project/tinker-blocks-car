@@ -146,6 +146,24 @@ The ESP32 exposes a RESTful API for controlling the car. All endpoints accept an
 }
 ```
 
+#### 7. Buzzer
+- **POST** `/api/buzzer`
+- **Body:**
+  - `action` ("on/off")
+- **Example:**
+```json
+{
+  "action": "off"
+}
+```
+- **Response:**
+```json
+{
+  "success": true,
+  "result": "stopped"
+}
+```
+
 ### Communication with Arduino
 
 - The ESP32 sends commands to the Arduino over serial using the protocol described in the Arduino README
