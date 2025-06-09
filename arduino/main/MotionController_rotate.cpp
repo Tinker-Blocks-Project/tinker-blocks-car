@@ -91,7 +91,7 @@ Result MotionController::rotateRelative(float angleDeg, int speed)
     }
 
     // Determine direction and angle magnitude
-    bool isLeftTurn = angleDeg > 0;
+    bool isLeftTurn = angleDeg < 0;
     float absAngle = abs(angleDeg);
 
     // PID controller constants - more aggressive values
