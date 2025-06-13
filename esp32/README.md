@@ -142,9 +142,10 @@ The ESP32 exposes a RESTful API for controlling the car. All endpoints accept an
 ```json
 {
   "success": true,
-  "success_result": false
+  "success_result": "1"
 }
 ```
+- **Note:** Returns `"1"` if black circle detected, `"0"` if not detected
 
 #### 7. Buzzer
 - **POST** `/api/buzzer`

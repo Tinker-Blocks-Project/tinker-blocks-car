@@ -8,6 +8,7 @@ This repository contains the **Arduino firmware** for the Tinker Blocks Car, res
 - 4 DC motors (differential/tank steering)
 - 2 H-bridges (motor drivers)
 - Ultrasonic sensor (front obstacle detection)
+- IR sensor (black obstacle detection)
 - Arduino Mega (main controller)
 - 3x 3.7V Li-ion batteries (11.1V total)
 - Voltage regulator (5V for Arduino)
@@ -30,20 +31,21 @@ MotionController_rotate.cpp   - Rotation logic
 GyroSensor.cpp                - Gyro/IMU logic
 PenController.cpp             - Pen servo logic
 UltrasonicSensor.cpp          - Ultrasonic logic
+IRSensor.cpp                  - IR sensor logic
 API.cpp                       - Serial API interface
 Result.cpp, MovementParams.cpp- Data structures
 ```
 
 ## Serial API Reference
 
-The Arduino exposes a serial API for movement, rotation, pen, gyro, and sensor commands. All commands are sent as a single line (ending with `\n`), and responses are JSON objects.
+The Arduino exposes a serial API for movement, rotation, pen, gyro, sensor, and IR commands. All commands are sent as a single line (ending with `\n`), and responses are JSON objects.
 
 ### Command Format
 
 ```
 command:{"param1":"value1","param2":value2}
 ```
-- `command`: One of `move`, `rotate`, `pen`, `gyro`, `sensor`
+- `command`: One of `move`, `rotate`, `pen`, `gyro`, `sensor`, `ir`
 - JSON payload: Command-specific parameters
 
 ### Response Format
@@ -96,6 +98,13 @@ command:{"param1":"value1","param2":value2}
 - Examples:
   - `sensor:{"action":"distance"}`
   - `sensor:{"action":"obstacle","threshold":15}`
+
+#### 6. IR Sensor (`ir`)
+- Required: `action` ("black_obstacle")
+- Examples:
+  - `ir:{"action":"black_obstacle"}`
+- Success: `"1"` if black circle detected, `"0"` if not detected
+- Failure: `{ "failure_reason": "Unknown sensor action..." }`
 
 ### Protocol Notes
 - Baud rate: 115200
