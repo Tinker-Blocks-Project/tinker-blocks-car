@@ -25,6 +25,11 @@ float MotionController::normalizeAngle(float angle)
 
 Result MotionController::rotate(float angleDeg, int speed, bool absolute)
 {
+    // logic is reversed, so we need to flip the angle for convenience
+    // this is the outer most layer where we reverse
+    // postive angles turn right, negative angles turn left
+    angleDeg = -angleDeg;
+
     if (absolute)
     {
         return rotateToAbsolute(angleDeg, speed);
@@ -91,7 +96,6 @@ Result MotionController::rotateRelative(float angleDeg, int speed)
     }
 
     // Determine direction and angle magnitude
-    bool isLeftTurn = angleDeg < 0;
     float absAngle = abs(angleDeg);
 
     // PID controller constants - more aggressive values
