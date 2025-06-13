@@ -15,6 +15,9 @@ private:
 
     float accumulatedAngle;
 
+    // Helper function for dynamic braking
+    void dynamicBrake(int currentLeftSpeed, int currentRightSpeed);
+
 public:
     MotionController(
         const Motor &frontLeft,

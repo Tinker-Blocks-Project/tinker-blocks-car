@@ -6,18 +6,57 @@
 extern UltrasonicSensor ultrasonicSensor;
 extern GyroSensor gyroSensor;
 
+// Constants for obstacle detection
+const float START_OBSTACLE_DISTANCE = 5.0; // Distance to checking for obstacles before the car starts moving (in cm)
+const float OBSTACLE_DISTANCE = 15.0;      // Distance to check for obstacles (in cm)
+
 // Constants for yaw-based correction - reduced aggressiveness
-const float YAW_THRESHOLD = 0.19; // degrees (increased from 0.2 to be less sensitive)
-const int BASE_CORRECTION = 32; // Base PWM adjustment (reduced from 50)
-const int MIN_SPEED_DIFF = 40; // Minimum speed difference (reduced from 80)
-const float CORRECTION_FACTOR = 2.1; // Multiplier for yaw error (reduced from 5.0)
+const float YAW_THRESHOLD = 0.19;       // degrees (increased from 0.2 to be less sensitive)
+const int BASE_CORRECTION = 32;         // Base PWM adjustment (reduced from 50)
+const int MIN_SPEED_DIFF = 40;          // Minimum speed difference (reduced from 80)
+const float CORRECTION_FACTOR = 2.1;    // Multiplier for yaw error (reduced from 5.0)
 const float CORRECTION_SMOOTHING = 0.7; // Smoothing factor for gradual correction (0-1, higher = smoother)
 
-Result MotionController::translate(const MovementParams &params, bool checkUltrasonic, bool enableYawCorrection) {
+// Dynamic braking constants
+const float BRAKE_POWER_RATIO = 0.8;       // Brake power as ratio of current speed (0.8 = 80% of current speed)
+const float BRAKE_TIME_MS_PER_SPEED = 2.0; // Milliseconds of braking per unit of speed
+const int MIN_BRAKE_TIME_MS = 50;          // Minimum braking time
+const int MAX_BRAKE_TIME_MS = 300;         // Maximum braking time
+
+// Helper function for dynamic braking
+void MotionController::dynamicBrake(int currentLeftSpeed, int currentRightSpeed)
+{
+    // Calculate braking parameters based on current speeds
+    int avgSpeed = (abs(currentLeftSpeed) + abs(currentRightSpeed)) / 2;
+
+    // Calculate brake power (reverse direction)
+    int brakeLeftSpeed = -currentLeftSpeed * BRAKE_POWER_RATIO;
+    int brakeRightSpeed = -currentRightSpeed * BRAKE_POWER_RATIO;
+
+    // Calculate brake time based on speed
+    int brakeTime = constrain(avgSpeed * BRAKE_TIME_MS_PER_SPEED, MIN_BRAKE_TIME_MS, MAX_BRAKE_TIME_MS);
+
+    // Apply braking
+    frontLeftMotor.move(brakeLeftSpeed);
+    rearLeftMotor.move(brakeLeftSpeed);
+    frontRightMotor.move(brakeRightSpeed);
+    rearRightMotor.move(brakeRightSpeed);
+
+    // Hold brake for calculated time
+    delay(brakeTime);
+
+    // Full stop
+    stopAllMotors();
+    delay(50);
+}
+
+Result MotionController::translate(const MovementParams &params, bool checkUltrasonic, bool enableYawCorrection)
+{
     Result result;
     result.success = false;
 
-    if (!params.isValid()) {
+    if (!params.isValid())
+    {
         result.failure_reason = "Invalid movement parameters";
         return result;
     }
@@ -30,9 +69,11 @@ Result MotionController::translate(const MovementParams &params, bool checkUltra
     bool isForward = speed > 0;
 
     // If moving forward and ultrasonic checks are enabled, check for obstacles
-    if (isForward && checkUltrasonic) {
+    if (isForward && checkUltrasonic)
+    {
         float obstacleDistance = ultrasonicSensor.getDistance();
-        if (obstacleDistance > 0 && obstacleDistance < 15.0) {
+        if (obstacleDistance > 0 && obstacleDistance < START_OBSTACLE_DISTANCE)
+        {
             result.failure_reason = "Obstacle detected at " + String(obstacleDistance, 2) + "cm";
             return result;
         }
@@ -57,7 +98,21 @@ Result MotionController::translate(const MovementParams &params, bool checkUltra
     // Apply direction to base speed for moveAllMotors
     int directedSpeed = isForward ? baseSpeed : -baseSpeed;
 
-    while (millis() < endTime) {
+    while (millis() < endTime)
+    {
+        // Check for obstacles during movement if moving forward and ultrasonic checks are enabled
+        if (isForward && checkUltrasonic)
+        {
+            float obstacleDistance = ultrasonicSensor.getDistance();
+            if (obstacleDistance > 0 && obstacleDistance < OBSTACLE_DISTANCE)
+            {
+                // Apply dynamic braking based on current speeds
+                dynamicBrake(leftSpeed, rightSpeed);
+                result.failure_reason = "Obstacle detected during movement at " + String(obstacleDistance, 2) + "cm (emergency braked)";
+                return result;
+            }
+        }
+
         // Get current yaw relative to reference
         float currentYaw = gyroSensor.getRelativeYaw();
         // Calculate yaw error relative to the initial yaw at the start of this movement
@@ -68,37 +123,47 @@ Result MotionController::translate(const MovementParams &params, bool checkUltra
         int targetRightSpeed = baseSpeed;
 
         // Adjust motor speeds based on yaw error
-        if (abs(yawError) > YAW_THRESHOLD) {
+        if (abs(yawError) > YAW_THRESHOLD)
+        {
             // Calculate correction based on error magnitude
             // Use a quadratic scaling for smoother response to small errors
             float errorRatio = min(abs(yawError) / 10.0, 1.0); // Cap at 10 degrees max error
-            int correction = BASE_CORRECTION + (int) (errorRatio * errorRatio * (MIN_SPEED_DIFF - BASE_CORRECTION));
+            int correction = BASE_CORRECTION + (int)(errorRatio * errorRatio * (MIN_SPEED_DIFF - BASE_CORRECTION));
 
             // Apply non-linear scaling for more gentle corrections
-            correction = (int) (correction * CORRECTION_FACTOR * sqrt(abs(yawError)));
+            correction = (int)(correction * CORRECTION_FACTOR * sqrt(abs(yawError)));
 
             // Apply correction direction based on movement direction
-            if (isForward) {
-                if (yawError > 0) {
+            if (isForward)
+            {
+                if (yawError > 0)
+                {
                     // We're drifting right (positive yaw error)
                     // To counter this, we need to steer left
-                    targetLeftSpeed += correction; // Increase left speed
+                    targetLeftSpeed += correction;  // Increase left speed
                     targetRightSpeed -= correction; // Decrease right speed
-                } else {
+                }
+                else
+                {
                     // We're drifting left (negative yaw error)
                     // To counter this, we need to steer right
-                    targetLeftSpeed -= correction; // Decrease left speed
+                    targetLeftSpeed -= correction;  // Decrease left speed
                     targetRightSpeed += correction; // Increase right speed
                 }
-            } else {
+            }
+            else
+            {
                 // Reverse correction direction when going backward
-                if (yawError > 0) {
+                if (yawError > 0)
+                {
                     // When reversing, positive yaw error means we need to steer right
-                    targetLeftSpeed -= correction; // Decrease left speed
+                    targetLeftSpeed -= correction;  // Decrease left speed
                     targetRightSpeed += correction; // Increase right speed
-                } else {
+                }
+                else
+                {
                     // When reversing, negative yaw error means we need to steer left
-                    targetLeftSpeed += correction; // Increase left speed
+                    targetLeftSpeed += correction;  // Increase left speed
                     targetRightSpeed -= correction; // Decrease right speed
                 }
             }
@@ -114,7 +179,9 @@ Result MotionController::translate(const MovementParams &params, bool checkUltra
             // Store current speeds for next iteration
             prevLeftSpeed = leftSpeed;
             prevRightSpeed = rightSpeed;
-        } else {
+        }
+        else
+        {
             // Reset to base speeds if error is small (with smoothing)
             leftSpeed = prevLeftSpeed * CORRECTION_SMOOTHING + baseSpeed * (1 - CORRECTION_SMOOTHING);
             rightSpeed = prevRightSpeed * CORRECTION_SMOOTHING + baseSpeed * (1 - CORRECTION_SMOOTHING);
@@ -125,7 +192,8 @@ Result MotionController::translate(const MovementParams &params, bool checkUltra
         }
 
         // Apply direction
-        if (!isForward) {
+        if (!isForward)
+        {
             leftSpeed = -leftSpeed;
             rightSpeed = -rightSpeed;
         }
@@ -136,13 +204,12 @@ Result MotionController::translate(const MovementParams &params, bool checkUltra
         frontRightMotor.move(rightSpeed);
         rearRightMotor.move(rightSpeed);
 
-
         // Small delay for more responsive corrections
         delay(5);
     }
 
-    // Stop all motors
-    stopAllMotors();
+    // Apply dynamic braking for smooth stop
+    dynamicBrake(leftSpeed, rightSpeed);
 
     // Prepare success result with proper JSON formatting
     result.success = true;
