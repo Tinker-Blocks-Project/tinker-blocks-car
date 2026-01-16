@@ -4,15 +4,15 @@
 #include <WebServer.h>
 #include <ArduinoJson.h>
 
-const char *ssid = "ZTE";
-const char *password = "zte2375948*";
+const char *ssid = "";
+const char *password = "";
 
 // Use WebServer for easier API implementation
 WebServer server(80);
 
 
-const char *identity = "12113636";     // university username
-const char *username = "12113636";     // often same as identity
+const char *identity = "";     // university username
+const char *username = "";     // often same as identity
 
 /*
 void connectToWPA2Enterprise() {
